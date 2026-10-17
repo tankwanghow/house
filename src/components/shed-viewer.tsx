@@ -15,6 +15,7 @@ import {
   liningInfo,
   girtRodDx,
   ceilingEdgePieces,
+  ceilingProfile,
 } from "@/shed/geometry";
 import { snapHit, type SnapKind } from "@/shed/measure";
 import type { SafetyFocus } from "@/shed/safety";
@@ -992,8 +993,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         phase = 0,
         prof: Parameters<typeof profile>[2] = spec.roof,
         profRib = ribH,
+        custom?: [number, number][],
       ) => {
-        const pts = profile(width, phase, prof, profRib);
+        const pts = custom ?? profile(width, phase, prof, profRib);
         const positions: number[] = [];
         const dir = down ? -1 : 1;
         const z1 = z0 + length;
@@ -1083,12 +1085,18 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         groups.roof.add(group);
       }
 
-      // 13 plain Mega Rib 30 sheets across, centred, 125 mm short of each wall (see frameLayout); ribs DOWN.
-      const ceilingWidth = frameMid.ceiling.z1 - frameMid.ceiling.z0;
+      // Ceiling profile (Tan's drawing, 760 cover, 35 rib): 13 plain sheets across, centred, 60 mm short of each wall (see
+      // frameLayout); ribs DOWN. 27 identical full major ribs at 380 mm (13 × 2 + 1) with 3 shallow minor ribs in every pan.
+      // The mesh runs from the first rib's outer foot (the lap-edge side, towards -z) to the last rib's outer foot.
       const ceilingLength = spec.length - chordW;
-      // Its pans are at frameMid.ceiling.y, 1 mm under the truss; a FULL rib at every 250 mm from one cover edge to the other, outer edges too (13 × 3 + 1 = 40 identical ribs); the two outer ribs are centred on the cover edge, so the drawn sheet is a half rib base wider each side.
+      const cp = ceilingProfile;
+      const ceilingFoot = frameMid.ceiling.z0 + spec.ceilingSheet.leftRib - spec.ceilingSheet.ribBase / 2;
+      const ceilingPts: [number, number][] = [...cp.pts].reverse().map(([sx, h]) => [cp.width - sx, h]);
       const ceiling = new THREE.Group();
-      ceiling.add(ribMesh(ceilingWidth + spec.ceilingSheet.ribBase, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, 0, spec.ceilingSheet, spec.ceilingSheet.rib * scale));
+      const ceilingMesh = ribMesh(cp.width, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, 0, spec.ceilingSheet, spec.ceilingSheet.rib * scale, ceilingPts);
+      // Local x runs towards -z after the group's rotation, and the mesh is centred on its own width: move it so its -z foot is at ceilingFoot.
+      ceilingMesh.position.x = -(ceilingFoot + cp.width / 2);
+      ceiling.add(ceilingMesh);
       ceiling.rotation.y = Math.PI / 2;
       ceiling.position.set(-ceilingLength / 2, 0, 0);
       groups.ceiling.add(ceiling);
@@ -1324,7 +1332,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       }
 
       // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 177.8 mm (7 in) flat leg starts at the wall
-      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 125 mm gap and lapping 52.8 mm
+      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 60 mm gap and lapping 117.8 mm
       // onto the sheet; the 127 mm (5 in) leg points down on the wall side, in the lining's face gap, with the lining against it.
       // Cut between the cross purlins (whose flanges stand on the pans), so the legs never meet a purlin.
       {
