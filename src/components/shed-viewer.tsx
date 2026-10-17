@@ -12,6 +12,7 @@ import {
   wallQuantities,
   foundationQuantities,
   type PartId,
+  liningInfo,
 } from "@/shed/geometry";
 import { snapHit, type SnapKind } from "@/shed/measure";
 import type { SafetyFocus } from "@/shed/safety";
@@ -1417,9 +1418,14 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
 
       // Girt tie rods (M12, one per bay per side at midspan, bottom girt through the middle girt up to the SHS tie) . Every rod is
       // the same length, so they share one cylinder geometry. No girt support under the bottom girt (Tan, 7:50 PM).
-      const rodGeoLen = frameMid.girtRods[0].y1 - frameMid.girtRods[0].y0;
-      const girtRodGeo = new THREE.CylinderGeometry(spec.girt.rodDiameter / 2, spec.girt.rodDiameter / 2, rodGeoLen, 8);
-      geos.push(girtRodGeo);
+      // One cylinder geometry per rod piece (one per girt gap, the top one on to the tie), shared by every bay.
+      const girtRodGeos = frameMid.girtRods
+        .filter((r) => r.sign > 0)
+        .map((r) => {
+          const geo = new THREE.CylinderGeometry(spec.girt.rodDiameter / 2, spec.girt.rodDiameter / 2, r.y1 - r.y0, 8);
+          geos.push(geo);
+          return geo;
+        });
       // Rod top (Tan's detail): M12 bolt welded head-up under the SHS tie, threads down, and a coupling nut that
       // joins the rod. One merged geometry with its origin at the tie's underside.
       const st = spec.girt.stud;
@@ -1432,15 +1438,25 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       const studGeo = mergeGeometries(studParts, false) ?? studParts[0].clone();
       for (const g of studParts) g.dispose();
       geos.push(studGeo);
+      const couplerGeo = new THREE.CylinderGeometry(hexR(st.couplerAF), hexR(st.couplerAF), st.coupler, 6);
+      geos.push(couplerGeo);
       const studMat = new THREE.MeshStandardMaterial({ color: 0x4d5559, metalness: 0.75, roughness: 0.4 });
       for (let bay = 0; bay < derived.bays; bay += 1) {
         const mid = x0 + (bay + 0.5) * spec.bay;
         for (const r of frameMid.girtRods) {
-          const rod = new THREE.Mesh(girtRodGeo, rodMat);
+          const rod = new THREE.Mesh(girtRodGeos[r.piece], rodMat);
           rod.position.set(mid, (r.y0 + r.y1) / 2, r.z);
           groups.girtRods.add(rod);
         }
         for (const r of frameMid.girtRods) {
+          if (r.yCoupler == null) continue;
+          // Coupling nut standing on the girt web, joining this rod piece to the next one up.
+          const cpl = new THREE.Mesh(couplerGeo, studMat);
+          cpl.position.set(mid, r.yCoupler + st.coupler / 2, r.z);
+          cpl.userData.length = st.coupler;
+          groups.girtRodStuds.add(cpl);
+        }
+        for (const r of frameMid.girtRods.filter((q) => q.piece === frameMid.girtRods.length / 2 - 1)) {
           const stud = new THREE.Mesh(studGeo, studMat);
           stud.position.set(mid, r.yTieUnder, r.z);
           stud.userData.length = st.head + st.thread;
@@ -2002,7 +2018,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
           cam: { pos: [-39.5, 2.4, 10.5], target: [-45, 0.1, 5.06] },
         },
         midGirt: {
-          build: () => xray([...piecesOf("wallGirts", (c) => Math.abs(c.y - spec.girt.midCentre) < 0.3), ...piecesOf("girtRods"), ...piecesOf("girtRodStuds")]),
+          build: () => xray([...piecesOf("wallGirts", (c) => Math.abs(c.y - (liningInfo.girtRows[1].top + liningInfo.girtRows[1].bottom) / 2) < 0.3), ...piecesOf("girtRods"), ...piecesOf("girtRodStuds")]),
           cam: { pos: [-35, 2.6, 15.5], target: [-42, 2.6, 5.1] },
         },
         concreteWall: {

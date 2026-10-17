@@ -2,6 +2,10 @@
  * Safety review of the current model: for each item, the problem and the recommendation only (no change history).
  * Plain words for the owner. Each item has an id the 3D viewer uses to highlight the related members.
  */
+import { girtCheck } from "./girtcheck";
+
+const pct = (v: number) => Math.round(v * 100);
+
 export type SafetyFocus =
   | "frameFixity"
   | "footings"
@@ -102,21 +106,18 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "midGirt",
-        title: "Middle wall girt overloaded in inward wind",
-        tag: "≈145–200%",
-        problem:
-          "The ASC 12516 middle girt spans 5.865 m and carries about 1.4 m of wall. In inward wind its free outer flange is squeezed and, even with the midspan M12 rod up to the SHS tie, it works at about 145–200% (about 103–141% at 0.57 kPa).",
+        title: "Middle and top wall girts overloaded in inward wind",
+        tag: `≈${pct(girtCheck.rows[1].cases[1].bending)}–${pct(girtCheck.rows[1].cases[0].bending)}%`,
+        problem: `The ASC 12516 middle and top girts (3 girts, ${(girtCheck.span).toFixed(3)} m span) each carry about ${girtCheck.rows[1].tributary.toFixed(2)} m of wall. Rough code check, flange braced only at the midspan rod (${girtCheck.bracedLength.toFixed(2)} m): bending ${pct(girtCheck.rows[1].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[1].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[1].cases[1].deflection)}% / ${pct(girtCheck.rows[1].cases[0].deflection)}% of L/150. Yield alone would be ${pct(girtCheck.rows[1].cases[0].yieldOnly)}% at 0.8 kPa, so the failure is flange buckling and deflection. C125/ASC 12516 1.6 FAILS these two rows.`,
         recommendation:
-          "C 150×65×2.0 for this row with the existing midspan rod (about 72%), or C 150×65×1.6 with rods at the third points (about 70–80%). More rods on the ASC 12516 alone are not enough. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.",
+          "Add rods at the third points of the span, or use a deeper or thicker C for these two rows (not re-computed here), or bring the girt pitch down. Engineer to size. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.",
       },
       {
         id: "bottomGirt",
-        title: "Bottom wall girt overloaded in inward wind",
-        tag: "≈110–150%",
-        problem:
-          "The ASC 12516 bottom girt spans 5.865 m with nothing under it, carrying about 1.06 m of wall; in inward wind it works at about 110–150% (about 78–108% at 0.57 kPa).",
-        recommendation:
-          "C 150×65×2.0 for this row (about 56%), or a small concrete support cast with the wall at midspan with the girt bolted to it on an angle cleat (about 26–36%).",
+        title: "Bottom wall girt in inward wind",
+        tag: `≈${pct(girtCheck.rows[0].cases[1].bending)}–${pct(girtCheck.rows[0].cases[0].bending)}%`,
+        problem: `The ASC 12516 bottom girt (4 in above the wall top) carries about ${girtCheck.rows[0].tributary.toFixed(2)} m of wall, with the wall top and the middle girt as supports. Rough code check: bending ${pct(girtCheck.rows[0].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[0].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[0].cases[1].deflection)}% / ${pct(girtCheck.rows[0].cases[0].deflection)}% of L/150. This row passes.`,
+        recommendation: "No change needed on this row from the rough check; engineer to confirm.",
       },
       {
         id: "endFrames",

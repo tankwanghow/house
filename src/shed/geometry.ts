@@ -242,21 +242,22 @@ export const spec = {
   /**
    * Wall girts behind the lining, AJIYA ASC 12516 (same C as the ceiling purlins), one per bay between the
    * columns. Web horizontal at the top, open side (toes) down so water cannot collect in it; the 127 mm depth
-   * runs out through the 125 mm column, inner flange against the lining's metal-backed face. Two rows: the
-   * bottom row `bottomRaise` above the wall top (Tan, 28 Sep: raised 300 mm), hung from the SHS tie by the midspan tie rod (no
-   * girt support on the wall top, Tan 28 Sep 7:50 PM), and one centred at `midCentre`. There is no top
-   * row: the lining's top fixes into the SHS column tie instead.
-   * Tie rods (Tan, 28 Sep, 3 PM: carried up to the SHS tie, replacing "bottom to middle girt only"): one M12
-   * threaded rod per bay at midspan, from under the bottom girt's web, through the middle girt's web, up to the
-   * SHS 125 column tie. Tan's top detail: a 16 mm hole in the tie's bottom wall, an M12 × 40 grade 4.6 bolt welded
+   * runs out through the 125 mm column, inner flange against the lining's metal-backed face. Three rows (Tan, 17 Oct 2026): the
+   * lowest girt's bottom `bottomRaise` (4 in) above the wall top, the other two at the same pitch up to the SHS tie (girtPlan). The
+   * lining's top fixes into the SHS column tie. Rods hang the girts from the tie (no girt support on the wall top).
+   * Tie rods (Tan, 28 Sep, 3 PM: carried up to the SHS tie, replacing "bottom to middle girt only"): two M12
+   * threaded rod pieces per bay at midspan (one per girt gap): piece 1 from under the bottom girt's web to a coupling nut on the middle
+   * girt's web, piece 2 from that nut through the top girt's web up to the SHS 125 column tie. Tan's top detail: a 16 mm hole in the tie's bottom wall, an M12 × 40 grade 4.6 bolt welded
    * there with its head against the underside and threads pointing down, and an M12 coupling nut joining the rod to
    * it. `rodInset` in from the girts' outer flange (23 mm in from the tie's outside face). Nuts both sides of each
    * girt web. `stud`: head height, thread below the head, coupling nut length and across-flats.
    */
   girt: {
-    rows: 2,
-    midCentre: 2.7,
-    bottomRaise: 0.3,
+    rows: 3,
+    /** Tan, 17 Oct 2026: 3 girts, the lowest one's BOTTOM 4 in (101.6 mm) above the top of the concrete wall (inside edge). The other two are spaced at the same pitch up to the SHS tie, which is the top support (see girtPlan). */
+    bottomRaise: 4 * 0.0254,
+    /** Tie rods per bay per side: one per girt gap (Tan, 17 Oct 2026: 2 tie rods). */
+    rodsPerBay: 2,
     rodDiameter: 0.012,
     rodInset: 0.025,
     /** Clear gap at each girt end to the column face (girts cut 5.865 m, Tan 30 Sep 2026). */
@@ -332,10 +333,28 @@ const walls = (spec.length / spec.bay) * 2;
 /** Lining runs the same length as the ceiling sheet (between the end rafters). */
 const liningRun = spec.length - spec.rafter.width;
 const liningSheetsPerSide = Math.ceil(liningRun / spec.roof.cover - 1e-9);
+/**
+ * Wall girt plan (Tan, 17 Oct 2026: 3 girts, lowest bottom 4 in above the wall top). Heights are absolute y (m).
+ * The lowest girt's bottom is exactly bottomRaise above the wall's inside top edge. The SHS column tie (the lining's
+ * top fixing) counts as the top support, so the three girt centres and the tie's underside are at an even pitch.
+ */
+const girtPlan = (() => {
+  const wallTop = spec.floor.edge + spec.wall.inside;
+  const tieUnder = spec.floor.edge + spec.eaveAtColumn - spec.columnTie.depth;
+  const h = spec.purlin.flange;
+  const bottom0 = wallTop + spec.girt.bottomRaise;
+  const c0 = bottom0 + h / 2;
+  const pitch = (tieUnder - c0) / spec.girt.rows;
+  const tops = Array.from({ length: spec.girt.rows }, (_, i) => c0 + i * pitch + h / 2);
+  return { wallTop, tieUnder, pitch, tops, h };
+})();
 /** One girt per bay per row per side, cut to fit between the columns (like the column ties). */
 const girts = spec.girt.rows * (spec.length / spec.bay) * 2;
-/** One girt tie rod per bay per side; four anchor bolts per column. */
-const girtRods = (spec.length / spec.bay) * 2;
+/** Girt tie rods: spec.girt.rodsPerBay pieces per bay per side (one per girt gap, the top one on to the SHS tie). */
+const girtRodStuds = (spec.length / spec.bay) * 2;
+const girtRods = girtRodStuds * spec.girt.rodsPerBay;
+/** One M12 coupling nut on the top of each lower girt web that joins two rod pieces. */
+const girtRodJoins = girtRodStuds * (spec.girt.rodsPerBay - 1);
 const anchorBolts = (spec.length / spec.bay + 1) * 2 * 4;
 /** Connections (Tan, 30 Sep 2026: no site welding). One shelf cleat per girt end; one seat angle per tie end. */
 const ties = (spec.length / spec.bay) * 2;
@@ -413,7 +432,7 @@ export const parts = [
   { id: "girtCleats", label: "Girt brackets L75", count: girtCleats },
   { id: "girtBolts", label: "Girt bolts M12", count: girtBolts },
   { id: "girtRods", label: "Girt tie rods", count: girtRods },
-  { id: "girtRodStuds", label: "Rod studs + couplers", count: girtRods },
+  { id: "girtRodStuds", label: "Rod studs + couplers", count: girtRodStuds + girtRodJoins },
   { id: "wallLining", label: "Wall lining", count: liningSheetsPerSide * 2 },
   { id: "eaveNetting", label: "Eave netting", count: (spec.length / spec.bay) * 2 },
   { id: "gableNetting", label: gableLabel, count: 2 },
@@ -464,13 +483,22 @@ export const cutOrder = cutLines.map((l) => ({
 export const crossPurlinSaving = cutLines[2].metres * (c12516 - cCross);
 /** Rods and bolts, gross section: M12 girt tie rods (bottom girt web up to the top of the SHS tie) and M20 anchor bolts. */
 const rodKg = (d: number) => Math.PI * (d / 2) ** 2 * 7850;
-const girtRodLength =
-  spec.floor.edge + spec.eaveAtColumn - spec.columnTie.depth - spec.girt.stud.head - spec.girt.stud.thread -
-  (spec.floor.edge + spec.wall.inside + 0.002 + spec.girt.bottomRaise + spec.purlin.flange - spec.purlin.wall - 0.02);
+/** Rod piece spans (y0, y1): piece 0 from under the bottom girt's web to the coupler on the next girt's web; the last piece from that coupler up to the stud under the tie. */
+const girtRodSpans = (() => {
+  const { tops, tieUnder } = girtPlan;
+  const st = spec.girt.stud;
+  const n = spec.girt.rodsPerBay;
+  return Array.from({ length: n }, (_, i) => ({
+    y0: i === 0 ? tops[0] - spec.purlin.wall - 0.02 : tops[i] + st.coupler / 2,
+    y1: i < n - 1 ? tops[i + 1] + st.coupler / 2 : tieUnder - st.head - st.thread,
+  })).map((r) => ({ ...r, length: r.y1 - r.y0 }));
+})();
+export const girtRodPlan = girtRodSpans;
+const girtRodLengthTotal = girtRodSpans.reduce((a, r) => a + r.length, 0);
 const anchorLength = spec.anchorBolt.embed + spec.basePlate.thickness + spec.anchorBolt.projection;
 export const smallSteel = [
-  { section: "M12 rod · girt tie rods", order: `${girtRods} × ${girtRodLength.toFixed(3)} m · ${((girtRods * girtRodLength * rodKg(0.012)) / 1000).toFixed(3)} t` },
-  { section: "M12 × 40 bolts, grade 4.6 (welded studs) + M12 coupling nuts", order: `${girtRods} + ${girtRods}` },
+  { section: "M12 rod · girt tie rods", order: `${girtRods} pieces (${girtRodSpans.map((r, i) => `${girtRodStuds} × ${r.length.toFixed(3)} m for gap ${i + 1}`).join(", ")}) · ${((girtRodStuds * girtRodLengthTotal * rodKg(0.012)) / 1000).toFixed(3)} t` },
+  { section: "M12 × 40 bolts, grade 4.6 (welded studs) + M12 coupling nuts", order: `${girtRodStuds} studs under the tie + ${girtRodStuds + girtRodJoins} coupling nuts (${girtRodStuds} at the tie, ${girtRodJoins} joining the rod pieces on the middle girt)` },
   {
     section: "M12 bolts + nuts + washers · roof purlin brackets",
     order: `${roofPurlinCut.bolts} (4 per bracket × ${roofPurlinCut.brackets}; at the ${roofPurlinCut.joints} butt joints 2 per purlin end)`,
@@ -482,7 +510,7 @@ export const smallSteel = [
   },
   { section: "M20 · anchor bolts", order: `${anchorBolts} × ${anchorLength.toFixed(3)} m · ${((anchorBolts * anchorLength * rodKg(0.02)) / 1000).toFixed(3)} t` },
 ];
-const smallSteelMass = (girtRods * girtRodLength * rodKg(0.012) + anchorBolts * anchorLength * rodKg(0.02)) / 1000;
+const smallSteelMass = (girtRodStuds * girtRodLengthTotal * rodKg(0.012) + anchorBolts * anchorLength * rodKg(0.02)) / 1000;
 /**
  * Connection parts (Tan, 30 Sep 2026: shop-welded, site-bolted). Masses: plate and angle from their size (7850 kg/m³,
  * holes ignored); bolt sets (bolt + nut + 2 washers) about 0.13 kg for M16 × 35 and 0.066 kg for M12 × 30.
@@ -817,13 +845,11 @@ export function frameLayout(endFrame = false) {
     y1: yCeilingCrest - spec.lining.ceilingGap,
   }));
 
-  // Girts: web on top, toes down. The bottom row sits bottomRaise (300 mm) (plus 2 mm) above the wall's inside
-  // top edge, hung from the tie by the midspan rod (no support on the wall); the second row is centred at
-  // midCentre. The SHS column tie above (its top flush with the column top, flush with both column faces) takes the lining's top
+  // Girts: web on top, toes down. The bottom row's bottom sits bottomRaise (4 in) above the wall's inside
+  // top edge, hung from the tie by the midspan rods (no support on the wall); the other rows follow girtPlan. The SHS column tie above (its top flush with the column top, flush with both column faces) takes the lining's top
   // fixing, so there is no top girt row.
   const tieBottom = yColumnTop - spec.columnTie.depth;
-  const girtBottomLow = yWallIn + 0.002 + spec.girt.bottomRaise;
-  const girtTops = [girtBottomLow + spec.purlin.flange, spec.girt.midCentre + spec.purlin.flange / 2];
+  const girtTops = girtPlan.tops;
   const girts = [-1, 1].flatMap((sign) =>
     girtTops.map((yTop) => ({
       sign,
@@ -837,15 +863,20 @@ export function frameLayout(endFrame = false) {
   // Tie rod: from a nut just under the bottom girt's web, through the middle girt's web, up to a coupling nut on
   // an M12 stud welded under the SHS column tie, rodInset in from the outer flange. No girt support under the
   // bottom girt (Tan, 28 Sep 7:50 PM): the rod hangs it from the tie.
-  const girtRods = [-1, 1].map((sign) => ({
-    sign,
-    z: sign * (zInner + spec.purlin.depth - spec.girt.rodInset),
-    y0: girtTops[0] - spec.purlin.wall - 0.02,
-    /** Rod top: the end of the welded M12 stud, inside the coupling nut. */
-    y1: yColumnTop - spec.columnTie.depth - spec.girt.stud.head - spec.girt.stud.thread,
-    /** Underside of the SHS tie, where the stud's head is welded. */
-    yTieUnder: yColumnTop - spec.columnTie.depth,
-  }));
+  const girtRods = [-1, 1].flatMap((sign) =>
+    girtRodSpans.map((span, piece) => ({
+      sign,
+      piece,
+      z: sign * (zInner + spec.purlin.depth - spec.girt.rodInset),
+      y0: span.y0,
+      /** Rod top: for the last piece the end of the welded M12 stud, inside the coupling nut. */
+      y1: span.y1,
+      /** Underside of the SHS tie, where the stud's head is welded. */
+      yTieUnder: yColumnTop - spec.columnTie.depth,
+      /** Coupling nut on the girt web at the top of this piece (none on the last piece, which ends at the tie stud). */
+      yCoupler: piece < girtRodSpans.length - 1 ? girtTops[piece + 1] : null,
+    })),
+  );
 
   // Eave netting: in the plane of the columns' outside face, where the column tie (outside flush) and the
   // column-line roof purlin (its web's bottom corner is at zFace) both sit. It closes the gap from the
@@ -1001,6 +1032,7 @@ export const liningInfo = (() => {
   const f = frameLayout(false);
   const l = f.lining[1];
   const girtRows = f.girts.filter((g) => g.sign > 0).map((g) => ({ bottom: g.yBottom, top: g.yTop }));
+  const wallTopIn = f.walls[1].yIn;
   return {
     run: liningRun,
     sheetsPerSide: liningSheetsPerSide,
@@ -1016,6 +1048,9 @@ export const liningInfo = (() => {
     clearAtPans: 2 * l.zPan,
     girtLength: spec.bay - spec.column.side - 2 * spec.girt.endGap,
     girtRows,
+    wallTopIn,
+    girtPitch: girtPlan.pitch,
+    tieUnder: girtPlan.tieUnder,
     girtPastColumn: f.girts.find((g) => g.sign > 0)!.zOut - f.zFace,
     girts,
     /** Clear gap from the concrete wall's inside top edge up to the lining's foot. */
