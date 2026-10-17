@@ -84,12 +84,12 @@ export const safetySections: SafetySection[] = [
       {
         id: "kneeJoint",
         fixes: [{ id: "kneeGussets", label: "4 edge gussets 6×30×150 per knee" }],
-        title: "Truss-to-column knee: fins too thin, bolts carry more than assumed",
-        tag: "fins ≈114%",
+        title: "Truss-to-column knee: 6 mm fork, 2 bolts, not checked",
+        tag: "6 mm fork failed earlier",
         problem:
-          "The knee is a fork: a 12 mm cap plate on the column and two 12 mm fins, 54 mm apart, with 4 × M20 × 110 grade 8.8 preloaded bolts through the truss heel. The cap is OK (about 76%), but the fins are below the 14 mm minimum: fin base about 114% (elastic) and too slender (225 mm tall, height/thickness about 19 against about 13). The bolts carry the truss thrust as well as the frame moment, about 60–110 kN each.",
+          "The knee is a fork: a 6 mm cap plate on the column and two 6 mm × 125 mm wide fork plates with only 2 × M20 × 110 grade 8.8 preloaded bolts through the truss heel, one through the rafter (top tie) and one through the horizontal beam (bottom tie). The earlier 6 mm fork (215 mm wide, 4 bolts) FAILED the rough checks: fin base about 227% (elastic) and the cap's spread into the column wall about 151%. This code does not compute the knee, and those checks have not been redone for the narrower 125 mm fork with 2 bolts, so each bolt now carries more than before. Treat the knee as failing until the engineer designs it.",
         recommendation:
-          "Add 4 edge gussets per knee, 6 × 30 × 150 mm, welded to the outside of the fins and to the cap over the column walls, or use 16 mm fins (about 85%). Design the bolts, the bored sleeves in the heel and the 3 mm RHS walls for about 110 kN per bolt; preload them, blast the faying faces, keep 1 mm hole clearance. This joint carries the frame moment: the engineer must design and sign it off.",
+          "Add 4 edge gussets per knee, 6 × 30 × 150 mm, welded to the outside of the fork plates and to the cap over the column walls, or use thicker fork plates (not recomputed here). Design the bolts, the bored sleeves in the heel and the 3 mm RHS walls for the full thrust; preload them, blast the faying faces. This joint carries the frame moment: the engineer must design and sign it off.",
       },
       {
         id: "connections",

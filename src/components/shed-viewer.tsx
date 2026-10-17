@@ -389,13 +389,11 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       };
       const kneeMat = new THREE.MeshStandardMaterial({ color: 0x8a949b, metalness: 0.65, roughness: 0.38 });
       const kneeBoltMat = new THREE.MeshStandardMaterial({ color: 0x353c40, metalness: 0.75, roughness: 0.38 });
-      const kneeShimMat = new THREE.MeshStandardMaterial({ color: 0xa8866a, metalness: 0.55, roughness: 0.45 });
       const kneeGeo = (() => {
         const kn = spec.knee;
         const cap = new THREE.BoxGeometry(kn.capSide, kn.cap, kn.capSide);
         const finLen = frameMid.knee[0].z1 - frameMid.knee[0].z0;
         const fin = new THREE.BoxGeometry(kn.fin, kn.finHeight, finLen);
-        const shim = new THREE.BoxGeometry(kn.shim, kn.finHeight, finLen);
         const L = frameMid.knee[0].boltLength;
         const hexR = (af: number) => af / Math.sqrt(3);
         const grip = L - 0.036;
@@ -411,8 +409,8 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         bolt.rotateZ(Math.PI / 2);
         // RHS end cover plate, 0.3 mm proud of the RHS outline so it reads as its own piece.
         const endPlate = new THREE.BoxGeometry(spec.rafter.width + 0.0006, spec.rafter.depth + 0.0006, spec.endPlate.thickness);
-        geos.push(cap, fin, shim, bolt, endPlate);
-        return { cap, fin, shim, bolt, endPlate, finLen };
+        geos.push(cap, fin, bolt, endPlate);
+        return { cap, fin, bolt, endPlate, finLen };
       })();
       const endPlateMat = new THREE.MeshStandardMaterial({ color: 0x9aa4ab, metalness: 0.6, roughness: 0.42 });
       for (let i = 0; i < derived.frames; i += 1) {
@@ -513,18 +511,15 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
             groups.plates,
           );
           addMember(new THREE.Vector3(x, c.bottom, z), new THREE.Vector3(x, c.top, z), col, col, steel, groups.columns);
-          // OPTION 2 fork knee (Tan, 30 Sep 2026): SHOP cap plate + two fins on the column, 54 mm fork, 2 mm shims, no doublers;
-          // SITE: 4 × M20 8.8 preloaded bolts through fins and heel. Shared geometries, built once (kneeGeo).
+          // OPTION 2 fork knee (Tan, 30 Sep 2026): SHOP cap plate + two fins on the column, fork, no doublers;
+          // SITE: 2 × M20 8.8 preloaded bolts through fins and heel. Shared geometries, built once (kneeGeo).
           {
             const kn = frame.knee[k];
             const sk = spec.knee;
-            cluster("kneeFins", x, z, kneeGeo.cap, kneeMat, [x, (kn.capBottom + kn.capTop) / 2, z], { size: [sk.fin * 2 + 2 * (spec.rafter.width / 2 + sk.shim), sk.cap + sk.finHeight, kneeGeo.finLen] });
-            // Flush layout: fins end on the column's outside face and run 90 mm past its inside face; shims either side.
+            cluster("kneeFins", x, z, kneeGeo.cap, kneeMat, [x, (kn.capBottom + kn.capTop) / 2, z], { size: [sk.fin * 2 + spec.rafter.width, sk.cap + sk.finHeight, kneeGeo.finLen] });
+            // Flush layout: fins end on the column's outside face and end level with its inside face (125 mm wide).
             const zf = (kn.z0 + kn.z1) / 2;
             for (const fx of kn.finX) cluster("kneeFins", x, z, kneeGeo.fin, kneeMat, [x + fx, (kn.y0 + kn.y1) / 2, zf]);
-            for (const dx of kn.shimX) {
-              cluster("kneeShims", x, z, kneeGeo.shim, kneeShimMat, [x + dx, (kn.y0 + kn.y1) / 2, zf], { size: [sk.shim, sk.finHeight, kneeGeo.finLen] });
-            }
             for (const b of kn.bolts) cluster("kneeBolts", x, z, kneeGeo.bolt, kneeBoltMat, [x, b.y, b.z], { length: kn.boltNominal });
           }
         }
@@ -2165,7 +2160,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         },
         kneeJoint: {
           build: () =>
-            xray([...piecesOf("kneeFins"), ...piecesOf("kneeShims"), ...piecesOf("kneeBolts"), ...piecesOf("endPlates")]),
+            xray([...piecesOf("kneeFins"), ...piecesOf("kneeBolts"), ...piecesOf("endPlates")]),
           cam: { pos: [-43.9, 4.05, 6.6], target: [-45, 4.28, 5.06] },
         },
         shopConnections: {
@@ -2437,7 +2432,6 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         steel.dispose();
         kneeMat.dispose();
         kneeBoltMat.dispose();
-        kneeShimMat.dispose();
         endPlateMat.dispose();
         spliceMat.dispose();
         webMat.dispose();

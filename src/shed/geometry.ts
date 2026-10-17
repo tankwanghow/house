@@ -113,38 +113,37 @@ export const spec = {
    */
   girtCleat: { leg: 0.075, thickness: 0.006, width: 0.08, bolts: 2, boltAt: 0.045, gauge: 0.04, bolt: 0.012 },
   /**
-   * Truss heel to column top, OPTION 2 fork joint (Tan, 30 Sep 2026; engineer must design: it carries the frame
-   * moment, about 20 kNm). SHOP: a `capSide` square `cap` plate (Tan, 30 Sep 11:59 AM: 128 × 128, 1.5 mm over the
-   * 125 SHS all round, a small ledge for the fillet), full-penetration welded to the column top; two vertical `fin`
-   * plates, `finLength` across the house × `finHeight`, full-penetration welded upright on the cap, one each side of
-   * the truss. Tan, 30 Sep 12:28 PM: 54 mm fork, NO heel doublers: the fins are 54 mm clear apart (RHS 50 + a `shim`
-   * 2 mm steel shim each side). FLUSH layout: the fins' outer ends are on the column's outside face; the bolts sit
-   * `boltEnd` in from it (so the outer lower bolt is 65 mm from the beam end, for bearing and tear-out on the 3 mm
-   * RHS walls) and the fins end `finEdge` past the inner bolts, 90 mm past the column's inner face, above the ceiling.
-   * On the heel, a bored `tube` sleeve at each bolt (OD 42.4, 21 mm bore, 50 long) through 43 mm holes in both RHS
-   * walls, SHOP-welded all round on both faces: the bolt bears on the sleeve and the preload clamps through it.
-   * SITE: the truss drops between the fins and 4 × M20 grade 8.8 bolts go horizontally through both fins and the
-   * heel, in `hole` (21 mm, 1 mm clearance) holes, preloaded (pretensioned) to stop the knee slipping.
-   * Bolt group 2 × `boltZ` across × rows `boltRows` above the cap top (lower row in the beam,
-   * upper row in the rafter). The column steel stops `cap` below the truss seat, so the seat, ceiling (4.000 m clear),
-   * tie and lining are unchanged. Tan, 30 Sep 2:28 PM: cap and fins 6 mm, which FAILED the rough checks (fin base about
-   * 227% elastic, the cap's spread into the column wall about 151%; review/knee6mm_calc). Tan, 1 Oct 2026: cap and fins
-   * 12 mm. Scaled rough checks: cap spread ≈76%, fin base ≈114% elastic / ≈76% plastic, but a 225 mm fin at 12 mm is
-   * still slender (h/t ≈19 against about 13), so the fin edges need stiffening (gussets) or 16 mm: see the Safety item.
-   * Grip is now 78 mm (2 × 12 fins + 2 × 2 shims + 50 RHS), so the bolts are M20 × 110.
+   * Truss heel to column top, fork joint (engineer must design: it carries the frame moment, about 20 kNm). SHOP: a
+   * `capSide` square `cap` plate (128 × 128, 1.5 mm over the 125 SHS all round, a small ledge for the fillet),
+   * full-penetration welded to the column top; two vertical `fin` plates, `finWidth` (125 mm, the column width)
+   * across the house × `finHeight`, full-penetration welded upright on the cap, one each side of the truss.
+   * Tan, 17 Oct 2026: cap plate 6 mm, the two fork plates 6 mm thick × 125 mm wide, and only 2 bolt holes: one in the
+   * upper row (top tie, through the rafter) and one in the lower row (bottom tie, through the horizontal beam).
+   * The fins sit directly against the RHS (50 mm apart; any clearance is for the shop drawing, none is modelled). NO heel doublers. FLUSH layout: the fins' outer ends are on the column's outside face;
+   * the bolts sit `boltEnd` in from it (65 mm, for bearing and tear-out on the 3 mm RHS walls) and the fins end
+   * `finEdge` past the bolts, level with the column's inner face. On the heel, a bored `tube` sleeve at each bolt
+   * (OD 42.4, 21 mm bore, 50 long) through 43 mm holes in both RHS walls, SHOP-welded all round on both faces.
+   * SITE: the truss drops between the fins and 2 M20 grade 8.8 bolts (the code's existing bolt size; Tan did not
+   * give a new one) go horizontally through both fins and the heel, in `hole` (21 mm) holes, preloaded.
+   * Rows `boltRows` above the cap top (lower row in the beam, upper row in the rafter). The column steel stops `cap`
+   * below the truss seat, so the seat, ceiling (4.000 m clear), tie and lining are unchanged.
+   * History kept for the checks: the 30 Sep 6 mm fork (215 mm wide, 4 bolts) FAILED the rough checks (fin base about
+   * 227% elastic, the cap's spread into the column wall about 151%; review/knee6mm_calc). Those checks are not
+   * computed by this code and have NOT been redone for the 125 mm wide, 2-bolt fork.
+   * Grip is 62 mm (2 × 6 fins + 50 RHS); the bolt stays M20 × 110.
    */
   knee: {
-    cap: 0.012,
+    cap: 0.006,
     capSide: 0.128,
-    fin: 0.012,
+    fin: 0.006,
     finHeight: 0.225,
-    shim: 0.002,
+    /** Fork plate width across the house (Tan, 17 Oct 2026): 125 mm. */
+    finWidth: 0.125,
     boltEnd: 0.065,
-    finEdge: 0.03,
+    finEdge: 0.06,
     bolt: 0.02,
     boltNominal: 0.11,
     hole: 0.021,
-    boltZ: 0.06,
     boltRows: [0.0625, 0.1875],
     tube: { od: 0.0424, bore: 0.021, length: 0.05 },
   },
@@ -372,8 +371,8 @@ const tieAngles = ties * 2;
 const tieBolts = tieAngles * spec.tieAngle.bolts;
 const tieCaps = ties * 2;
 const kneeJoints = (spec.length / spec.bay + 1) * 2;
-const kneeShims = kneeJoints * 2;
-const kneeBolts = kneeJoints * spec.knee.boltRows.length * 2;
+/** 2 bolts per knee: one in the beam (bottom tie), one in the rafter (top tie). */
+const kneeBolts = kneeJoints * spec.knee.boltRows.length;
 /** Rafter eave tips (2 per frame) + ceiling beam ends at the columns (2 per frame). */
 const endPlates = (spec.length / spec.bay + 1) * 4;
 const gableLabel = spec.gableClosure === "sheet" ? "Gable sheet" : "Gable netting";
@@ -412,7 +411,6 @@ export const parts = [
   { id: "anchorBolts", label: "Anchor bolts", count: anchorBolts },
   { id: "columns", label: "Columns", count: frames * 2 },
   { id: "kneeFins", label: "Knee forks", count: kneeJoints },
-  { id: "kneeShims", label: "Fork shims 2 mm", count: kneeShims },
   { id: "kneeBolts", label: "Knee bolts M20", count: kneeBolts },
   { id: "endPlates", label: "RHS end plates", count: endPlates },
   { id: "sloping", label: "Rafters", count: frames * 2 },
@@ -531,9 +529,8 @@ export const connectionQuantities = (() => {
   const kn = spec.knee;
   const capKg = kn.capSide ** 2 * kn.cap * 7850;
   const endPlateKg = spec.rafter.width * spec.rafter.depth * spec.endPlate.thickness * 7850;
-  const finLength = kn.boltEnd + 2 * kn.boltZ + kn.finEdge;
+  const finLength = kn.boltEnd + kn.finEdge;
   const finKg = finLength * kn.finHeight * kn.fin * 7850;
-  const shimKg = finLength * kn.finHeight * kn.shim * 7850;
   const tubeKg = (Math.PI / 4) * (kn.tube.od ** 2 - kn.tube.bore ** 2) * kn.tube.length * 7850;
   const angleKgPerM = (2 * ta.leg - ta.thickness) * ta.thickness * 7850;
   const angleKg = angleKgPerM * ta.length;
@@ -543,11 +540,10 @@ export const connectionQuantities = (() => {
     { id: "tieAngles", name: "Tie seat angles, L75×75×6 × 115, SHOP-welded to the columns (5 mm fillet), 2 × 18 mm holes 45 mm from the column", count: tieAngles, each: angleKg, rm: [10, 15] },
     { id: "tieBolts", name: "M16 × 35 bolt + nut + 2 washers, grade 8.8 HDG, tie bottom to angle, SITE", count: tieBolts, each: 0.13, rm: [3, 5] },
     { id: "tieCaps", name: "Plastic push-in end caps for SHS 125×125", count: tieCaps, each: 0, rm: [3, 5] },
-    { id: "kneeCaps", name: "Knee cap plates 128 × 128 × 12 (Tan, 1 Oct 2026; was 6 mm, which failed), 1.5 mm over the SHS all round, SHOP full-penetration welded to the column tops", count: kneeJoints, each: capKg, rm: [19, 26] },
-    { id: "kneeFins", name: "Knee fins 215 × 225 × 12 (Tan, 1 Oct 2026; was 6 mm, which failed; still slender at 12 mm, gussets or 16 mm: see Safety), SHOP full-penetration welded upright on the cap plate, 54 mm clear apart, outer end flush with the column outside face, 90 mm past the inside face, 4 × 21 mm holes", count: kneeJoints * 2, each: finKg, rm: [48, 64] },
+    { id: "kneeCaps", name: "Knee cap plates 128 × 128 × 6 (Tan, 17 Oct 2026), 1.5 mm over the SHS all round, SHOP full-penetration welded to the column tops", count: kneeJoints, each: capKg, rm: [19, 26] },
+    { id: "kneeFins", name: "Knee fork plates 125 × 225 × 6 (Tan, 17 Oct 2026), SHOP full-penetration welded upright on the cap plate, 50 mm clear apart (against the RHS), outer end flush with the column outside face, 125 mm wide so the inner end is level with the column inner face, 2 × 21 mm holes (one in the rafter row, one in the beam row)", count: kneeJoints * 2, each: finKg, rm: [48, 64] },
     { id: "kneeTubes", name: "Bearing/crush sleeves OD 42.4 × 21 mm bore × 50 (turned from bar or heavy-wall tube; a standard CHS 42.4×5 bore of 32.4 would leave 6 mm of play), through 43 mm holes in both RHS walls, SHOP-welded all round both faces, ends flush", count: kneeBolts, each: tubeKg, rm: [8, 14] },
-    { id: "kneeShims", name: "Fork shims 215 × 225 × 2 steel, blasted, 4 × 21 mm holes, one each side of the heel (SITE, loose; 1 mm extras to make up the measured gap)", count: kneeShims, each: shimKg, rm: [8, 12] },
-    { id: "kneeBolts", name: "M20 × 110 grade 8.8 PRELOADED (pretensioned) bolt + nut + 2 hardened washers, HDG, SITE, in 21 mm holes (1 mm clearance); grip 78 mm", count: kneeBolts, each: 0.48, rm: [7, 10.5] },
+    { id: "kneeBolts", name: "M20 × 110 grade 8.8 PRELOADED (pretensioned) bolt + nut + 2 hardened washers, HDG, SITE, in 21 mm holes: 1 in the rafter (top tie) + 1 in the beam (bottom tie) per knee; grip 62 mm (the code's existing bolt size, Tan gave none)", count: kneeBolts, each: 0.48, rm: [7, 10.5] },
     { id: "endPlates", name: "RHS end cover plates 50 × 125 × 3, SHOP seal-welded all round on every open truss RHS end (36 rafter eave tips + 36 beam ends)", count: endPlates, each: endPlateKg, rm: [4, 8] },
   ].map((l) => ({ ...l, kg: l.count * l.each, rmLow: l.count * l.rm[0], rmHigh: l.count * l.rm[1] }));
   const kg = lines.reduce((s, l) => s + l.kg, 0);
@@ -556,7 +552,7 @@ export const connectionQuantities = (() => {
   const knee = lines.filter((l) => l.id.startsWith("knee"));
   const kneeKg = knee.reduce((s, l) => s + l.kg, 0);
   const kneeRm = [knee.reduce((s, l) => s + l.rmLow, 0), knee.reduce((s, l) => s + l.rmHigh, 0)];
-  return { cleatKg, angleKg, angleKgPerM, capKg, endPlateKg, finLength, finKg, shimKg, tubeKg, lines, kg, rmLow, rmHigh, kneeKg, kneeRm, kneeJoints };
+  return { cleatKg, angleKg, angleKgPerM, capKg, endPlateKg, finLength, finKg, tubeKg, lines, kg, rmLow, rmHigh, kneeKg, kneeRm, kneeJoints };
 })();
 const rmK = (v: number) => `RM ${(v / 1000).toFixed(1)}k`;
 export const connectionOrder = [
@@ -692,18 +688,17 @@ export function frameLayout(endFrame = false) {
 
   // The column steel stops one knee cap plate below the truss seat (Tan, 30 Sep 2026: OPTION 2 fork knee).
   const columns = [-zCol, zCol].map((z) => ({ z, bottom: plateTop, top: yColumnTop - spec.knee.cap }));
-  // Fork knee: cap plate, two fins either side of the heel (x offsets from the frame line), 2 mm shims between the
+  // Fork knee: cap plate, two fins either side of the heel (x offsets from the frame line); the
   // fins and the RHS (no doublers, Tan 12:28 PM), and the 4 bolt positions (z across the house, y up).
   const kn = spec.knee;
-  const finInner = spec.rafter.width / 2 + kn.shim;
+  const finInner = spec.rafter.width / 2;
   const knee = [-zCol, zCol].map((z) => {
     // Flush layout: fins end on the column's outside face; bolts `boltEnd` in from it, then 2 × boltZ further in.
     const sg = Math.sign(z);
     const zOut = z + sg * (col / 2);
     const zBoltOut = zOut - sg * kn.boltEnd;
-    const zBoltIn = zBoltOut - sg * 2 * kn.boltZ;
-    const zFinIn = zBoltIn - sg * kn.finEdge;
-    const zc = (zBoltOut + zBoltIn) / 2;
+    const zFinIn = zBoltOut - sg * kn.finEdge;
+    const zc = zBoltOut;
     return {
     z,
     zc,
@@ -711,12 +706,11 @@ export function frameLayout(endFrame = false) {
     capBottom: yColumnTop - kn.cap,
     capTop: yColumnTop,
     finX: [-1, 1].map((s) => s * (finInner + kn.fin / 2)),
-    shimX: [-1, 1].map((s) => s * (spec.rafter.width / 2 + kn.shim / 2)),
     z0: Math.min(zOut, zFinIn),
     z1: Math.max(zOut, zFinIn),
     y0: yColumnTop,
     y1: yColumnTop + kn.finHeight,
-    bolts: kn.boltRows.flatMap((dy) => [-1, 1].map((s) => ({ z: zc + s * kn.boltZ, y: yColumnTop + dy }))),
+    bolts: kn.boltRows.map((dy) => ({ z: zc, y: yColumnTop + dy })),
     boltLength: 2 * (finInner + kn.fin) + 0.036,
     boltNominal: kn.boltNominal,
     };
@@ -979,10 +973,9 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
     section: "M20 cast-in, 4 per base plate on a 200 mm square · 400 mm embedded in the 609 mm pad (204.5 mm from each side) · 50 mm above the plate for washer and nut, all buried in the floor slab (about 50 mm cover)",
     measure: "length",
   },
-  columns: { name: "Column", section: "SHS 125×125×4.5 · stops 12 mm under the truss seat for the knee cap plate", measure: "length" },
-  kneeFins: { name: "Knee fork (cap plate + 2 fins, one shop-welded piece)", section: "12 mm cap and fins (Tan, 1 Oct 2026; 6 mm failed). Rough: cap ≈76%, fin base ≈114% elastic / ≈76% plastic, fins still slender (h/t ≈19): add edge gussets or use 16 mm, see Safety · Cap plate 128 × 128 × 12 (1.5 mm over the 125 SHS all round: a small ledge for the fillet, 3.5 mm clear of the tie ends, 1.5 mm inside the eave netting), SHOP full-penetration weld to the column top + two fins 215 × 225 × 12, 54 mm clear apart (RHS 50 + a 2 mm shim each side, no doublers), SHOP full-penetration weld upright on the cap · FLUSH: outer end on the column's outside face, runs 90 mm past the inside face above the ceiling (1 mm clear) · 4 × 21 mm holes, 120 × 125 bolt group, outer bolts 65 mm in from the outside face · engineer must approve (less margin than with doublers)", measure: "size" },
-  kneeShims: { name: "Fork shim", section: "215 × 225 × 2 mm steel, blasted (it is in the slip plane), 4 × 21 mm holes · one each side of the heel between the fin and the 3 mm RHS wall, put in ON SITE · measure each heel and add 1 mm shims to fill the gap: a fin cannot be pulled in (it bends at its base after about 0.2 mm)", measure: "size" },
-  kneeBolts: { name: "Knee bolt", section: "M20 × 110 grade 8.8 (grip 78 mm), PRELOADED (pretensioned, part-turn or DTI washers) with hardened washers, ON SITE · horizontal through both fins, the shims, the RHS walls and the bored sleeve (OD 42.4, 21 mm bore, welded into the RHS) · 21 mm holes (1 mm clearance) · preload stops the knee slipping (plain 2 mm holes would let the frame top sway about 100 mm) · faying faces blasted, not painted · outer lower bolt 65 mm from the beam end", measure: "length" },
+  columns: { name: "Column", section: "SHS 125×125×4.5 · stops 6 mm under the truss seat for the knee cap plate", measure: "length" },
+  kneeFins: { name: "Knee fork (cap plate + 2 fork plates, one shop-welded piece)", section: "6 mm cap plate 128 × 128 (1.5 mm over the 125 SHS all round, a small ledge for the fillet, 3.5 mm clear of the tie ends, 1.5 mm inside the eave netting), SHOP full-penetration weld to the column top + two fork plates 125 wide × 225 × 6, 50 mm clear apart (directly against the RHS, no doublers), SHOP full-penetration weld upright on the cap (Tan, 17 Oct 2026) · FLUSH: outer end on the column's outside face, 125 mm wide so the inner end is level with the column's inner face · 2 × 21 mm holes: one through the rafter (top tie), one through the horizontal beam (bottom tie), 65 mm in from the outside face · the earlier 6 mm fork (215 wide, 4 bolts) failed the rough checks (fin base about 227%, cap about 151%); not recomputed for this fork · engineer must approve", measure: "size" },
+  kneeBolts: { name: "Knee bolt", section: "M20 × 110 grade 8.8 (grip 62 mm; the code's existing bolt, Tan gave no new size), PRELOADED (pretensioned, part-turn or DTI washers) with hardened washers, ON SITE · horizontal through both fork plates, the RHS walls and the bored sleeve (OD 42.4, 21 mm bore, welded into the RHS) · 21 mm holes · 2 per knee: the upper one through the rafter (top tie), the lower one through the horizontal beam (bottom tie) · faying faces blasted, not painted · lower bolt 65 mm from the beam end", measure: "length" },
   endPlates: { name: "RHS end cover plate", section: "3 mm plate cut to the RHS 50 × 125 outline, SHOP seal-welded all round (3 mm fillet) · on every open truss RHS end: the rafter eave tips and the ceiling beam ends (flush with the column's outside face, between the heel doublers) · RHS cut 3 mm short so the plate makes up the length · if the frames are hot-dip galvanised, the galvaniser must add vent holes (then plug them)", measure: "size" },
   sloping: { name: "Rafter", section: "RHS 50×125×3 · square cut at eave (3 mm end cover plate, seal-welded), 10° plumb cut at ridge (welded all round, sealed)", measure: "length", lengthLabel: "Top edge" },
   horizontal: { name: "Horizontal beam", section: "RHS 50×125×3", measure: "length" },

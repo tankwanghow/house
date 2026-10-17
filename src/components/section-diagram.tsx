@@ -497,7 +497,7 @@ export function SectionDiagram() {
           ["Wall girts, SHS tie (dashed)", colour.girtEdge],
           ["Eave mesh (SS304)", colour.netting],
           ["Concrete", colour.concrete],
-          ["Knee fins (54 mm fork, flush outside) + M20 bolts; RHS end plates", colour.knee],
+          ["Knee fork plates (6 mm, flush outside) + M20 bolts; RHS end plates", colour.knee],
           ["Tie seat angles and girt cleats sit behind each column (see the 3D view)", colour.girtEdge],
         ].map(([label, fill]) => (
           <span key={label} className="inline-flex items-center gap-1">
