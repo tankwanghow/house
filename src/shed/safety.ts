@@ -106,17 +106,17 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "midGirt",
-        title: "Middle and top wall girts overloaded in inward wind",
+        title: "Middle and top wall girts marginal in inward wind",
         tag: `≈${pct(girtCheck.rows[1].cases[1].bending)}–${pct(girtCheck.rows[1].cases[0].bending)}%`,
-        problem: `The ASC 12516 middle and top girts (3 girts, ${(girtCheck.span).toFixed(3)} m span) each carry about ${girtCheck.rows[1].tributary.toFixed(2)} m of wall. Rough code check, flange braced only at the midspan rod (${girtCheck.bracedLength.toFixed(2)} m): bending ${pct(girtCheck.rows[1].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[1].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[1].cases[1].deflection)}% / ${pct(girtCheck.rows[1].cases[0].deflection)}% of L/150. Yield alone would be ${pct(girtCheck.rows[1].cases[0].yieldOnly)}% at 0.8 kPa, so the failure is flange buckling and deflection. C125/ASC 12516 1.6 FAILS these two rows.`,
+        problem: `The ASC 12520 middle and top girts (3 girts, ${(girtCheck.span).toFixed(3)} m span) each carry about ${girtCheck.rows[1].tributary.toFixed(2)} m of wall. Rough code check, flange braced only at the midspan rod (${girtCheck.bracedLength.toFixed(2)} m): bending ${pct(girtCheck.rows[1].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[1].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[1].cases[1].deflection)}% / ${pct(girtCheck.rows[1].cases[0].deflection)}% of L/150. Yield alone would be ${pct(girtCheck.rows[1].cases[0].yieldOnly)}% at 0.8 kPa, so the limit is flange buckling and deflection. ${girtCheck.rows[1].cases.every((c) => c.pass) ? "Passes at both wind cases." : girtCheck.rows[1].cases[1].pass ? "Passes at the 0.57 kPa site wind but FAILS at 0.8 kPa design wind." : "FAILS at both wind cases."}`,
         recommendation:
-          "Add rods at the third points of the span, or use a deeper or thicker C for these two rows (not re-computed here), or bring the girt pitch down. Engineer to size. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.",
+          "Unless the engineer accepts 0.57 kPa, add rods at the third points of the span, or use a deeper C for these two rows (not re-computed here), or bring the girt pitch down. Engineer to size. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.",
       },
       {
         id: "bottomGirt",
         title: "Bottom wall girt in inward wind",
         tag: `≈${pct(girtCheck.rows[0].cases[1].bending)}–${pct(girtCheck.rows[0].cases[0].bending)}%`,
-        problem: `The ASC 12516 bottom girt (4 in above the wall top) carries about ${girtCheck.rows[0].tributary.toFixed(2)} m of wall, with the wall top and the middle girt as supports. Rough code check: bending ${pct(girtCheck.rows[0].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[0].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[0].cases[1].deflection)}% / ${pct(girtCheck.rows[0].cases[0].deflection)}% of L/150. This row passes.`,
+        problem: `The ASC 12520 bottom girt (4 in above the wall top) carries about ${girtCheck.rows[0].tributary.toFixed(2)} m of wall, with the wall top and the middle girt as supports. Rough code check: bending ${pct(girtCheck.rows[0].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[0].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[0].cases[1].deflection)}% / ${pct(girtCheck.rows[0].cases[0].deflection)}% of L/150. This row passes.`,
         recommendation: "No change needed on this row from the rough check; engineer to confirm.",
       },
       {

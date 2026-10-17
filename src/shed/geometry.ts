@@ -240,7 +240,7 @@ export const spec = {
    */
   lining: { faceGap: 0.002, wallLap: 0.05, ceilingGap: 0.002 },
   /**
-   * Wall girts behind the lining, AJIYA ASC 12516 (same C as the ceiling purlins), one per bay between the
+   * Wall girts behind the lining, AJIYA ASC 12520 (C 127×51×15×2.0, same profile as the 1.6 ceiling purlins), one per bay between the
    * columns. Web horizontal at the top, open side (toes) down so water cannot collect in it; the 127 mm depth
    * runs out through the 125 mm column, inner flange against the lining's metal-backed face. Three rows (Tan, 17 Oct 2026): the
    * lowest girt's bottom `bottomRaise` (4 in) above the wall top, the other two at the same pitch up to the SHS tie (girtPlan). The
@@ -254,6 +254,8 @@ export const spec = {
    */
   girt: {
     rows: 3,
+    /** Wall girt section: AJIYA ASC 12520, C 127×51×15×2.0 (Tan, 17 Oct 2026; same profile as 12516, thicker steel). */
+    section: { depth: 0.127, flange: 0.051, lip: 0.015, wall: 0.002 },
     /** Tan, 17 Oct 2026: 3 girts, the lowest one's BOTTOM 4 in (101.6 mm) above the top of the concrete wall (inside edge). The other two are spaced at the same pitch up to the SHS tie, which is the top support (see girtPlan). */
     bottomRaise: 4 * 0.0254,
     /** Tie rods per bay per side: one per girt gap (Tan, 17 Oct 2026: 2 tie rods). */
@@ -458,7 +460,7 @@ const steelLines = [
   { section: "RHS 50×125×3", bars: 73, kg: hollowKg(0.05, 0.125, 0.003) },
   { section: "SHS 125×125×3.0 · column ties", bars: (frames - 1) * 2 + 1, kg: hollowKg(0.125, 0.125, 0.003) },
   { section: "SHS 50×50×2.3", bars: 34, kg: hollowKg(0.05, 0.05, 0.0023) },
-  { section: "ASC 12516 C 127×51×15×1.6 · wall girts", bars: girts + 1, kg: lippedCKg(0.127, 0.051, 0.015, 0.0016) },
+  { section: "ASC 12520 C 127×51×15×2.0 · wall girts", bars: girts + 1, kg: lippedCKg(spec.girt.section.depth, spec.girt.section.flange, spec.girt.section.lip, spec.girt.section.wall) },
 ];
 /** Cold-formed C sections supplied cut to length (not in the 6 m bar order above). */
 const c12516 = lippedCKg(0.127, 0.051, 0.015, 0.0016);
@@ -489,7 +491,7 @@ const girtRodSpans = (() => {
   const st = spec.girt.stud;
   const n = spec.girt.rodsPerBay;
   return Array.from({ length: n }, (_, i) => ({
-    y0: i === 0 ? tops[0] - spec.purlin.wall - 0.02 : tops[i] + st.coupler / 2,
+    y0: i === 0 ? tops[0] - spec.girt.section.wall - 0.02 : tops[i] + st.coupler / 2,
     y1: i < n - 1 ? tops[i + 1] + st.coupler / 2 : tieUnder - st.head - st.thread,
   })).map((r) => ({ ...r, length: r.y1 - r.y0 }));
 })();
@@ -1001,7 +1003,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   ceilingCross: { name: "Cross purlin", section: "Lipped C 100×50×15×1.2 G450 (lighter section, saving applied) · bottom flange ON the ceiling sheet's pans (1 mm under the column top) and its ends BEAR on the SHS column ties · hung from the 3 long purlins by L50 hanger angles (2 × M10 each end, Tan 7:25 PM; was a 27 mm gap with a notional packer) · 4 spans of ≈2.53 m · 2 × self-drilling screws through the flange into each tie", measure: "length" },
   ceilingHangers: { name: "Ceiling hanger", section: "L50×50×5 angle, shop cut and punched (no welding) · one at every cross/long purlin crossing · SITE: 2 × M10 grade 4.6 into the long purlin web (round holes) + 2 × M10 into the cross purlin web through 11 × 30 VERTICAL SLOTS in the hanger leg · set each cross purlin to a string line (±10 mm, about 10 mm high at the crossings to allow for the sag the sheet adds), tighten, then 2 × 12-14 × 20 self-drilling lock screws through the leg into the cross purlin web so it cannot slide down the slots · about 1 kN per hanger with no one on the ceiling; 2 lock screws ≈2.5–3 kN (rough, engineer to confirm)", measure: "length" },
   ceilingEdge: { name: "Ceiling edge angle", section: "Cold-formed galvanised angle 100×50×1.6 · flat leg on the SHS tie top (30 mm on the tie, upright leg there), 70 mm past the tie's inside face over the ceiling sheet's edge pan · cut to fit between the columns and the cross purlins (5 mm clear), 3 pieces per bay per side · SITE: self-drilling screws down into the tie at 300 mm, and up through the edge pan into the flat leg at 300 mm on a sealant bead, so the sheet edge is held and sealed all along both walls", measure: "length" },
-  wallGirts: { name: "Wall girt", section: "AJIYA ASC 12516 C 127×51×15×1.6 · cut 5.865 m (5 mm clear of each column), web holes punched by the supplier · web on top, open side down, dropped onto shop-welded L75×75×6 brackets and bolted on site (2 × M12 each end) · bottom row raised 300 mm off the wall top, hung from the SHS tie by the midspan M12 rod (no support on the wall)", measure: "length" },
+  wallGirts: { name: "Wall girt", section: "AJIYA ASC 12520 C 127×51×15×2.0 · cut 5.865 m (5 mm clear of each column), web holes punched by the supplier · web on top, open side down, dropped onto shop-welded L75×75×6 brackets and bolted on site (2 × M12 each end) · bottom row raised 300 mm off the wall top, hung from the SHS tie by the midspan M12 rod (no support on the wall)", measure: "length" },
   girtCleats: { name: "Girt bracket", section: "Angle L75×75×6 × 80 mm (Tan, 30 Sep 2:24 PM) · upright leg SHOP-welded to the column side face, pointing down (5 mm fillet down both sides and across the bottom) · flat leg inside the C under the web, between the lips (80 mm vs about 94 mm clear) · 2 × 14×22 slots 45 mm from the column, 40 mm apart across the web", measure: "size" },
   girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's flat leg (45 mm from the column, 40 mm apart), washer and nut underneath · girts are never welded", measure: "length" },
   girtRods: {

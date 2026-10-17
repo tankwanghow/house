@@ -256,7 +256,7 @@ function Home() {
             />
             <Fact
               label="Wall girts"
-              value={`ASC 12516 · ${liningInfo.girts} × ${metres(liningInfo.girtLength)} · 3 rows, lowest bottom ${Math.round((liningInfo.girtRows[0].bottom - liningInfo.wallTopIn) * 1000)} mm (4 in) above the wall top, then at ${Math.round(liningInfo.girtPitch * 1000)} mm pitch (centres ${liningInfo.girtRows.map((r) => metres((r.top + r.bottom) / 2, 3)).join(", ")}; the SHS tie is the top support) · web on top, open side down`}
+              value={`ASC 12520 (C 127×51×15×2.0) · ${liningInfo.girts} × ${metres(liningInfo.girtLength)} · 3 rows, lowest bottom ${Math.round((liningInfo.girtRows[0].bottom - liningInfo.wallTopIn) * 1000)} mm (4 in) above the wall top, then at ${Math.round(liningInfo.girtPitch * 1000)} mm pitch (centres ${liningInfo.girtRows.map((r) => metres((r.top + r.bottom) / 2, 3)).join(", ")}; the SHS tie is the top support) · web on top, open side down`}
             />
             <Fact label="Girt tie rods" value={`M12 · ${derived.bays * 4} pieces · 2 per bay per side at midspan, one per girt gap: ${girtRodPlan.map((r, i) => `gap ${i + 1} ${metres(r.length, 3)}`).join(", ")} · piece 1 hangs the bottom girt from the middle girt; piece 2 starts at a coupling nut on the middle girt web, passes through the top girt up to the SHS tie, where it screws into a coupling nut on an M12 × 40 grade 4.6 bolt welded under the tie in the shop (16 mm hole, weld all round, zinc ground off, painted)`} />
             <Fact

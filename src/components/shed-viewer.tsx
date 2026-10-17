@@ -1379,7 +1379,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         return merged;
       };
       const girtAngles = { [-1]: girtAngleGeo(-1), [1]: girtAngleGeo(1) } as Record<number, import("three").BufferGeometry>;
-      const gw = spec.purlin.wall;
+      const gw = spec.girt.section.wall;
       const girtBoltLen = gw + gc.thickness + 0.0025 + 0.0108 + 0.003;
       // Origin at the top of the girt web: head on the web, nut under the cleat.
       const girtBoltParts = [
@@ -1402,6 +1402,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
             new THREE.Vector3(mid, g.yTop, g.zIn),
             girtLen,
             groups.wallGirts,
+            spec.girt.section,
           );
           const zc = g.zIn + (g.sign * spec.purlin.depth) / 2;
           for (const [face, dir] of [[faceA, 1], [faceB, -1]] as const) {

@@ -1,6 +1,6 @@
 /**
  * Wall girt wind check (rough hand check, computed from the geometry, not an engineer's design).
- * Girt: spec.purlin section (ASC 12516, C 127×51×15×1.6), web horizontal on top, flanges vertical, spans between columns.
+ * Girt: spec.girt.section (ASC 12520, C 127×51×15×2.0; section properties derived here from the centreline model, no catalogue table in the code), web horizontal on top, flanges vertical, spans between columns.
  * Wind acts horizontally across the web's plane, i.e. strong-axis bending. Supports: the concrete wall top below the
  * lowest girt and the SHS tie above the top girt carry the lining's tributary strips between the girts.
  * Assumptions (change here): fy 450 MPa (G450), E 200 GPa, wind 0.8 kPa design / 0.57 kPa MS 1553 site, deflection limit L/150
@@ -13,7 +13,7 @@ const E = 200e9;
 
 /** Centreline-model section properties (m units) of a lipped C, strong axis. */
 function cSection() {
-  const d = spec.purlin.depth, b = spec.purlin.flange, c = spec.purlin.lip, t = spec.purlin.wall;
+  const { depth: d, flange: b, lip: c, wall: t } = spec.girt.section;
   // elements: web (vertical in the C's own frame), 2 flanges, 2 lips; centreline dimensions
   const dc = d - t, bc = b - t, cc = c - t / 2;
   const els = [
@@ -66,7 +66,7 @@ export const girtCheck = (() => {
     };
   });
   return {
-    section: "C 127×51×15×1.6 (ASC 12516)",
+    section: "C 127×51×15×2.0 (ASC 12520)",
     span: L,
     Ix: sec.I,
     Zx: sec.Z,
