@@ -383,6 +383,12 @@ export const ceilingInfo = (() => {
     area: width * length,
     stripArea: (ceilingEdgeMetres * ce.blank),
     lap: ce.flat - gap,
+    /** Rib lines: a rib at every 250 mm from one cover edge to the other (the sheet joints are lap ribs): sheets × 3 + 1. */
+    ribs: cs.sheets * (cs.cover / cs.ribPitch) + 1,
+    /** Rib centre positions from the left wall, and the first and last rib's distance to its wall (symmetric: 125 mm each). */
+    ribFromLeftWall: Array.from({ length: cs.sheets * (cs.cover / cs.ribPitch) + 1 }, (_, k) => gap + k * cs.ribPitch),
+    firstRibFromWall: gap,
+    lastRibFromWall: inner - (gap + cs.sheets * cs.cover),
   };
 })();
 const walls = (spec.length / spec.bay) * 2;
@@ -1100,7 +1106,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
     measure: "length",
     lengthLabel: "Sheet run down the slope",
   },
-  ceiling: { name: "Ceiling sheet", section: "Plain Mega Rib 30, zincalume TCT 0.35 mm, no foam · 750 mm effective cover, ribs at 250 mm, 28.5 mm high, 24 mm crest · 13 sheets across the 10.0 m inner width, centred (13 × 750 = 9750 mm), leaving 125 mm to each long wall, closed by the ceiling edge angle · ribs DOWN (crests at 4.0065 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access", measure: "size" },
+  ceiling: { name: "Ceiling sheet", section: "Plain Mega Rib 30, zincalume TCT 0.35 mm, no foam · 750 mm effective cover, ribs at 250 mm, 28.5 mm high, 24 mm crest · 13 sheets across the 10.0 m inner width, centred (13 × 750 = 9750 mm), leaving 125 mm to each long wall, closed by the ceiling edge angle · 40 rib lines (13 × 3 + 1, a rib on every 250 mm including both outer edges and the 12 sheet joints), the first and last 125 mm from their wall · ribs DOWN (crests at 4.0065 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access", measure: "size" },
   capping: { name: "Ridge cap", section: "24 in girth zincalume 0.47 mm · 8 ft pieces", measure: "length", lengthLabel: "Run" },
   sagRods: { name: "Purlin tie rod", section: "12 mm rod", measure: "length" },
   roofBraces: { name: "Roof X cable", section: "12 mm galvanized wire rope", measure: "length" },
