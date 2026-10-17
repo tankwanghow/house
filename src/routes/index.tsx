@@ -29,8 +29,10 @@ function Home() {
   const [view, setView] = useState<ViewName>("iso");
   const [measuring, setMeasuring] = useState(false);
   const clearMeasure = () => shed.current?.clearMeasure();
+  // On first load the netting, roof, capping, ceiling and wall lining layers start hidden (Tan, 17 Oct 2026); each can be switched on.
+  const defaultHidden = new Set<PartId>(["eaveNetting", "gableNetting", "roof", "capping", "ceiling", "wallLining"]);
   const [shown, setShown] = useState<Record<PartId, boolean>>(() =>
-    Object.fromEntries(parts.map((part) => [part.id, true])) as Record<PartId, boolean>,
+    Object.fromEntries(parts.map((part) => [part.id, !defaultHidden.has(part.id)])) as Record<PartId, boolean>,
   );
 
   // Hide the toolbar and info panel so the model can fill a phone screen. Remembered per browser;
