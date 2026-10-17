@@ -24,6 +24,8 @@ export type ShedHandle = {
   clearMeasure: () => void;
   /** Safety panel: highlight the members an item is about (null clears) and move the camera to them. */
   focusSafety: (id: SafetyFocus | null) => void;
+  /** Safety layers drawn for the focused item: the problem highlight, and the PROPOSED fix members (not in the parts list). */
+  setSafetyLayers: (problem: boolean, fixes: boolean) => void;
   /** CSS px of the model covered by a panel on the left and a sheet at the bottom; the view centre shifts into the uncovered part. */
   setInsets: (left: number, bottom: number) => void;
   /**
@@ -78,6 +80,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
     setView: () => {},
     clearMeasure: () => {},
     focusSafety: () => {},
+    setSafetyLayers: () => {},
     setInsets: () => {},
     setCut: () => 1,
     targetX: () => 0,
@@ -1872,7 +1875,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       const zoneBlue = zoneMat(0x38bdf8, 0.36);
       const ghostMat = zoneMat(0xf59e0b, 0.14, true);
       const dashMat = new THREE.LineDashedMaterial({ color: 0xffb020, dashSize: 0.35, gapSize: 0.22, depthTest: false, transparent: true });
-      const safetyMats: import("three").Material[] = [xrayMat, zoneGreen, zoneRed, zoneAmber, zoneBlue, ghostMat, dashMat];
+      // Proposed fix members: clearly different (cyan) from the orange problem highlight.
+      const proposedMat = new THREE.MeshStandardMaterial({ color: 0x22d3ee, emissive: 0x035a66, metalness: 0.2, roughness: 0.5, transparent: true, opacity: 0.95, depthTest: false, depthWrite: false });
+      const safetyMats: import("three").Material[] = [xrayMat, zoneGreen, zoneRed, zoneAmber, zoneBlue, ghostMat, dashMat, proposedMat];
       const safetyGeos: import("three").BufferGeometry[] = [];
       const labelTextures: import("three").Texture[] = [];
       const clearSafety = () => {
@@ -1881,7 +1886,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         safetyGeos.length = 0;
         for (const tex of labelTextures) tex.dispose();
         labelTextures.length = 0;
-        for (const mat of safetyMats.splice(7)) mat.dispose();
+        for (const mat of safetyMats.splice(8)) mat.dispose();
       };
       /** Pieces (direct children) of a part group whose world-space centre passes the test. */
       const piecesOf = (id: PartId, test: (c: import("three").Vector3) => boolean = () => true) => {
@@ -2180,12 +2185,57 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
           cam: { pos: [58, 26, 42], target: [0, 2, 0] },
         },
       };
+      // Proposed fixes drawn in the model (only where the fix is a member that can be drawn). Not part of the parts list.
+      const fixItems: Partial<Record<SafetyFocus, () => void>> = {
+        midGirt: () => {
+          // Extra M12 rods at the third points of the girt span, through all three girts (proposed in the safety text).
+          const tops = frameMid.girts.filter((g) => g.sign > 0).map((g) => g.yTop);
+          const y0 = tops[0] - spec.girt.section.wall - 0.02 - 0.03;
+          const y1 = tops[tops.length - 1] + 0.04;
+          const parts: import("three").BufferGeometry[] = [];
+          for (let bay = 0; bay < derived.bays; bay += 1) {
+            const mid = x0 + (bay + 0.5) * spec.bay;
+            const third = (spec.bay - col - 2 * spec.girt.endGap) / 6;
+            for (const sign of [-1, 1]) {
+              const z = sign * (frameMid.zInner + spec.purlin.depth - spec.girt.rodInset);
+              for (const dx of [-third, third]) {
+                parts.push(new THREE.CylinderGeometry(0.012, 0.012, y1 - y0, 8).translate(mid + dx, (y0 + y1) / 2, z));
+              }
+            }
+          }
+          const merged = mergeGeometries(parts, false);
+          for (const g of parts) g.dispose();
+          if (merged) {
+            safetyGeos.push(merged);
+            const mesh = new THREE.Mesh(merged, proposedMat);
+            mesh.renderOrder = 23;
+            safetyGroup.add(mesh);
+          }
+          const labelBay = Math.floor(derived.bays / 2);
+          label("PROPOSED: extra M12 rods at the third points (not in parts list)", new THREE.Vector3(x0 + (labelBay + 0.5) * spec.bay, y1 + 0.55, frameMid.zInner + 0.5), 0.5);
+        },
+      };
+      let safetyId: SafetyFocus | null = null;
+      let layerProblem = true;
+      let layerFixes = false;
+      const drawSafety = () => {
+        clearSafety();
+        if (!safetyId) return;
+        if (layerProblem) focusItems[safetyId].build();
+        if (layerFixes) fixItems[safetyId]?.();
+      };
+      api.current.setSafetyLayers = (problem, fixes) => {
+        layerProblem = problem;
+        layerFixes = fixes;
+        drawSafety();
+      };
       api.current.focusSafety = (id) => {
         glide = null;
         clearSafety();
+        safetyId = id;
         if (!id) return;
         const item = focusItems[id];
-        item.build();
+        drawSafety();
         controls.enableDamping = false;
         controls.update();
         controls.enableDamping = true;
@@ -2331,6 +2381,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         api.current.setView = () => {};
         api.current.clearMeasure = () => {};
         api.current.focusSafety = () => {};
+        api.current.setSafetyLayers = () => {};
         api.current.setInsets = () => {};
         api.current.setCut = () => 1;
         api.current.targetX = () => 0;

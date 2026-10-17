@@ -60,6 +60,11 @@ function Home() {
   // Safety review panel: open/closed and the item currently highlighted in the model.
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [safetyFocus, setSafetyFocus] = useState<SafetyFocus | null>(null);
+  const [showProblem, setShowProblem] = useState(true);
+  const [showFixes, setShowFixes] = useState(false);
+  useEffect(() => {
+    shed.current?.setSafetyLayers(showProblem, showFixes);
+  }, [showProblem, showFixes]);
   const toggleSafety = () => setSafetyOpen((open) => !open);
   useEffect(() => {
     if (!safetyOpen) setSafetyFocus(null);
@@ -84,6 +89,10 @@ function Home() {
               active={safetyFocus}
               onSelect={setSafetyFocus}
               onClose={() => setSafetyOpen(false)}
+              showProblem={showProblem}
+              onProblem={setShowProblem}
+              showFixes={showFixes}
+              onFixes={setShowFixes}
               onInsets={setInsets}
             />
           )}
