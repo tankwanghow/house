@@ -73,7 +73,7 @@ export const spec = {
    * Column tie (eave strut) between the columns, SHS 125×125×3.0: the full column width, flush with both the
    * inside and outside column faces, top flush with the column top. The wall lining's top fixes into its inside face.
    * Connection (Tan, 30 Sep 2026: no site welding, shop welding OK): the tie is cut `endGap` short of each column
-   * face, sits on a shop-welded seat angle (spec.tieAngle) and is bolted down on site; plastic end caps close its ends.
+   * face, sits on a shop-welded bracket (spec.tieAngle) and is bolted down on site; plastic end caps close its ends.
    */
   columnTie: { width: 0.125, depth: 0.125, wall: 0.003, endGap: 0.005 },
   /**
@@ -95,23 +95,26 @@ export const spec = {
    */
   ceilingEdge: { flat: 0.1, up: 0.05, thickness: 0.0016, onTie: 0.03, gap: 0.005, screwPitch: 0.3 },
   /**
-   * Tie seat angle (T2, Tan 30 Sep 2026; L75×75×6, Tan 2:24 PM): `length` across the column (centred, 5 mm in from
-   * each face), upright leg SHOP-welded to the column side face (5 mm fillet down both sides and across the bottom; no weld
-   * at the heel, where the tie end sits), flat leg under the tie. No holes through the column. SITE: `bolts` × M16
-   * grade 8.8 per tie end, down through the tie's bottom face into the flat leg, `boltAt` from the column face,
-   * `gauge` apart across the tie; heads inside the tie (set through the open end before lifting), washer and nut
-   * under the leg. `cap`: push-in plastic end cap flange in the gap.
+   * Tie bracket (Tan, 17 Oct 2026): L75×75×6 cut 6 in (152.4 mm). Its L-shaped cut END is SHOP-welded to the column
+   * side face (fillet all round the L profile, about 300 mm of weld, on the 4.5 mm SHS wall: NOT checked, engineer to
+   * check), and the angle projects straight out along the wall `length`, horizontal leg UP (75 mm wide across the wall,
+   * centred on the column face), the other leg hanging 75 mm down as a fin on the INNER (house) side edge. The
+   * tie (cut `columnTie.endGap` short of the column face) sits on the horizontal leg. SITE: `bolts` × M16 grade 8.8
+   * in line along the length at `boltAts` (40 and 100 mm) from the column face, down through the tie's bottom face and
+   * the leg, heads inside the tie, washer and nut under the leg. The tie is 125 wide on a 75 leg, so the middle 75 mm
+   * of its bottom wall is supported. `cap`: push-in plastic end cap flange in the gap.
    */
-  tieAngle: { leg: 0.075, thickness: 0.006, length: 0.115, bolts: 2, bolt: 0.016, boltAt: 0.045, gauge: 0.06, cap: 0.002 },
+  tieAngle: { leg: 0.075, thickness: 0.006, length: 6 * 0.0254, bolts: 2, bolt: 0.016, boltAts: [0.04, 0.1], cap: 0.002 },
   /**
-   * Girt bracket (G1, Tan 30 Sep 2026; L75×75×6, Tan 2:24 PM): an angle `width` long across the wall. The upright
-   * leg is SHOP-welded to the column side face, pointing DOWN (5 mm fillet down both sides and across the bottom);
-   * the flat leg (`leg` out from the column) sits inside the C, right under the girt web, between the lips (80 mm
-   * against about 94 mm between the lip tips of the C127, 118 mm for a C152). Two 14×22 slots `boltAt` from the
-   * column face, `gauge` apart across the web. SITE: the girt (cut `girt.endGap` short at each end, web holes punched
-   * by the supplier) drops onto the brackets, 2 × M12 bolts down through the web and the flat leg, nut underneath.
+   * Girt bracket (Tan, 17 Oct 2026): L75×75×6 cut 4 in (101.6 mm), same build as the tie bracket: the L-shaped cut end
+   * is SHOP-welded to the column side face and the angle projects straight out along the wall, horizontal leg UP
+   * (75 mm wide across the wall, centred on the column face), fin hanging 75 mm down on the INNER (house) side edge.
+   * The girt (ASC 12520, cut `girt.endGap` short of the column face) drops over it from above: the 75 mm leg passes
+   * between the lip tips (see bracketFit) and the fin hangs inside the flanges. SITE: 2 × M12 in line along the
+   * projecting length at `boltAts` (30 and 75 mm) from the column face, down through the girt web and the leg, in
+   * 14 wide × 22 long slots (`slot`) in the leg, long way ALONG the wall so the girt can be set. Nut underneath.
    */
-  girtCleat: { leg: 0.075, thickness: 0.006, width: 0.08, bolts: 2, boltAt: 0.045, gauge: 0.04, bolt: 0.012 },
+  girtCleat: { leg: 0.075, thickness: 0.006, length: 4 * 0.0254, bolts: 2, bolt: 0.012, boltAts: [0.03, 0.075], slot: { w: 0.014, l: 0.022 } },
   /**
    * Truss heel to column top, fork joint (engineer must design: it carries the frame moment, about 20 kNm). SHOP: a
    * `capSide` square `cap` plate (128 × 128, 1.5 mm over the 125 SHS all round, a small ledge for the fillet),
@@ -522,10 +525,38 @@ const smallSteelMass = (girtRodStuds * girtRodLengthTotal * rodKg(0.012) + ancho
  * holes ignored); bolt sets (bolt + nut + 2 washers) about 0.13 kg for M16 × 35 and 0.066 kg for M12 × 30.
  * RM: rough Malaysian prices, supplied, cut, drilled, shop-welded and galvanised/painted; bolts HDG; get quotes.
  */
+/**
+ * Girt bracket fit (drop-over): the girt (C, web on top) is lowered over the bracket's 75 mm leg through the opening
+ * between its lip tips, depth − 2 × (lip + wall) (93 mm for the 2.0 mm wall; 94 mm for 1.6). The fin hangs inside the
+ * flanges; the bolts are in line along the leg, so the 75 mm width is the only across-the-wall dimension.
+ */
+export const bracketFit = (() => {
+  const gs = spec.girt.section;
+  const gc = spec.girtCleat;
+  const opening = gs.depth - 2 * (gs.lip + gs.wall);
+  const finOffset = gc.leg / 2; // fin outer face from the leg centre line
+  const flangeInside = gs.depth / 2 - gs.wall;
+  const boltFromGirtEnd = gc.boltAts.map((b) => b - spec.girt.endGap);
+  return {
+    lipOpening: opening,
+    legWidth: gc.leg,
+    spareEachSide: (opening - gc.leg) / 2,
+    legPasses: gc.leg < opening,
+    finClearOfFlange: flangeInside - finOffset,
+    finHangsBelowWeb: gc.leg - gc.thickness,
+    flangeDepth: gs.flange - gs.wall,
+    finInsideFlanges: finOffset < flangeInside && gc.leg - gc.thickness <= gs.flange + 0.03,
+    girtStartsFromFace: spec.girt.endGap,
+    boltFromGirtEnd,
+    boltsInGirt: boltFromGirtEnd.every((b) => b > 0 && b < spec.bay - spec.column.side - 2 * spec.girt.endGap),
+    boltsOnLeg: gc.boltAts.every((b) => b + gc.slot.l / 2 < gc.length),
+  };
+})();
 export const connectionQuantities = (() => {
   const gc = spec.girtCleat;
   const ta = spec.tieAngle;
-  const cleatKg = (2 * gc.leg - gc.thickness) * gc.thickness * gc.width * 7850;
+  const cleatKg = (2 * gc.leg - gc.thickness) * gc.thickness * gc.length * 7850;
+  const weldMm = Math.round(4 * gc.leg * 1000);
   const kn = spec.knee;
   const capKg = kn.capSide ** 2 * kn.cap * 7850;
   const endPlateKg = spec.rafter.width * spec.rafter.depth * spec.endPlate.thickness * 7850;
@@ -535,10 +566,10 @@ export const connectionQuantities = (() => {
   const angleKgPerM = (2 * ta.leg - ta.thickness) * ta.thickness * 7850;
   const angleKg = angleKgPerM * ta.length;
   const lines = [
-    { id: "girtCleats", name: "Girt brackets, angle L75×75×6 × 80, upright leg SHOP-welded to the column side face (pointing down), flat leg inside the C under the web, 2 × 14×22 slots", count: girtCleats, each: cleatKg, rm: [10, 14] },
-    { id: "girtBolts", name: "M12 × 30 bolt + nut + 2 washers, grade 4.6 HDG, girt web to cleat, SITE", count: girtBolts, each: 0.066, rm: [1, 1.5] },
-    { id: "tieAngles", name: "Tie seat angles, L75×75×6 × 115, SHOP-welded to the columns (5 mm fillet), 2 × 18 mm holes 45 mm from the column", count: tieAngles, each: angleKg, rm: [10, 15] },
-    { id: "tieBolts", name: "M16 × 35 bolt + nut + 2 washers, grade 8.8 HDG, tie bottom to angle, SITE", count: tieBolts, each: 0.13, rm: [3, 5] },
+    { id: "girtCleats", name: `Girt brackets, angle L75×75×6 cut 4 in (101.6 mm), L-shaped end SHOP-welded to the column side face (about ${weldMm} mm of fillet on the 4.5 mm SHS wall, not checked), projecting out along the wall, horizontal leg UP 75 mm wide, fin 75 mm down on the inner side, 2 × 14×22 slots along the wall at 30 and 75 mm from the column`, count: girtCleats, each: cleatKg, rm: [10, 14] },
+    { id: "girtBolts", name: "M12 × 30 bolt + nut + 2 washers, grade 4.6 HDG, girt web to bracket leg, in the 14×22 slots, SITE", count: girtBolts, each: 0.066, rm: [1, 1.5] },
+    { id: "tieAngles", name: `Tie brackets, angle L75×75×6 cut 6 in (152.4 mm), L-shaped end SHOP-welded to the column side face (about ${weldMm} mm of fillet on the 4.5 mm SHS wall, not checked), projecting out along the wall, horizontal leg UP 75 mm wide, fin 75 mm down on the inner side, 2 × 18 mm holes at 40 and 100 mm from the column`, count: tieAngles, each: angleKg, rm: [10, 15] },
+    { id: "tieBolts", name: "M16 × 35 bolt + nut + 2 washers, grade 8.8 HDG, tie bottom to bracket leg, SITE", count: tieBolts, each: 0.13, rm: [3, 5] },
     { id: "tieCaps", name: "Plastic push-in end caps for SHS 125×125", count: tieCaps, each: 0, rm: [3, 5] },
     { id: "kneeCaps", name: "Knee cap plates 128 × 128 × 6 (Tan, 17 Oct 2026), 1.5 mm over the SHS all round, SHOP full-penetration welded to the column tops", count: kneeJoints, each: capKg, rm: [19, 26] },
     { id: "kneeFins", name: "Knee fork plates 125 × 225 × 6 (Tan, 17 Oct 2026), SHOP full-penetration welded upright on the cap plate, 50 mm clear apart (against the RHS), outer end flush with the column outside face, 125 mm wide so the inner end is level with the column inner face, 2 × 21 mm holes (one in the rafter row, one in the beam row)", count: kneeJoints * 2, each: finKg, rm: [48, 64] },
@@ -981,8 +1012,8 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   horizontal: { name: "Horizontal beam", section: "RHS 50×125×3", measure: "length" },
   splices: { name: "Beam splice", section: "Splice sleeve over RHS 50×125", measure: "length" },
   ties: { name: "Column tie", section: "SHS 125×125×3.0 · eave strut, flush with both column faces · cut 5 mm short of each column, sits on a shop-welded seat angle, 2 × M16 bolted down on site at each end · plastic end caps · lining fixed to its inside face", measure: "length" },
-  tieAngles: { name: "Tie seat angle", section: "L75×75×6 × 115 mm (Tan, 30 Sep 2:24 PM) · upright leg SHOP-welded to the column side face (5 mm fillet down both sides and across the bottom; the heel top is left clear for the tie's 5 mm gap), flat leg under the tie · no holes through the column · 2 × 18 mm holes for the M16 bolts, 45 mm from the column face (30 mm to the toe), 60 mm apart", measure: "size" },
-  tieBolts: { name: "Tie bolt", section: "M16 × 35 grade 8.8 HDG, put in ON SITE · down through the tie's bottom face into the seat angle's flat leg, 45 mm from the column face, 60 mm apart · head inside the tie (set through the open end before lifting), washer and nut under the angle", measure: "length" },
+  tieAngles: { name: "Tie bracket", section: "L75×75×6 cut 6 in (152.4 mm) (Tan, 17 Oct 2026) · L-shaped cut end SHOP-welded to the column side face (fillet all round the L, about 300 mm of weld on the 4.5 mm SHS wall: NOT checked, engineer to check; the 6 in length cantilevers 152 mm from that weld carrying the eave strut and ceiling loads: NOT checked, engineer to check, a stiffener, through-plate or seat could be needed) · projects straight out along the wall, horizontal leg UP 75 mm wide centred on the column face, other leg a 75 mm fin hanging down on the inner (house) side · no holes through the column · 2 × 18 mm holes in line along the length at 40 and 100 mm from the column face", measure: "size" },
+  tieBolts: { name: "Tie bolt", section: "M16 × 35 grade 8.8 HDG, put in ON SITE · down through the tie's bottom face into the bracket's horizontal leg, 2 in line along the length at 40 and 100 mm from the column face · head inside the tie (set through the open end before lifting), washer and nut under the leg", measure: "length" },
   tieCaps: { name: "Tie end cap", section: "Push-in plastic end cap, SHS 125×125×3 · keeps water and birds out of the tie · fitted on site after bolting", measure: "size" },
   verticals: { name: "Web vertical", section: "SHS 50×50×2.3", measure: "length" },
   wWebs: { name: "W web diagonal", section: "SHS 50×50×2.3", measure: "length" },
@@ -1004,8 +1035,8 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   ceilingHangers: { name: "Ceiling hanger", section: "L50×50×5 angle, shop cut and punched (no welding) · one at every cross/long purlin crossing · SITE: 2 × M10 grade 4.6 into the long purlin web (round holes) + 2 × M10 into the cross purlin web through 11 × 30 VERTICAL SLOTS in the hanger leg · set each cross purlin to a string line (±10 mm, about 10 mm high at the crossings to allow for the sag the sheet adds), tighten, then 2 × 12-14 × 20 self-drilling lock screws through the leg into the cross purlin web so it cannot slide down the slots · about 1 kN per hanger with no one on the ceiling; 2 lock screws ≈2.5–3 kN (rough, engineer to confirm)", measure: "length" },
   ceilingEdge: { name: "Ceiling edge angle", section: "Cold-formed galvanised angle 100×50×1.6 · flat leg on the SHS tie top (30 mm on the tie, upright leg there), 70 mm past the tie's inside face over the ceiling sheet's edge pan · cut to fit between the columns and the cross purlins (5 mm clear), 3 pieces per bay per side · SITE: self-drilling screws down into the tie at 300 mm, and up through the edge pan into the flat leg at 300 mm on a sealant bead, so the sheet edge is held and sealed all along both walls", measure: "length" },
   wallGirts: { name: "Wall girt", section: "AJIYA ASC 12520 C 127×51×15×2.0 · cut 5.865 m (5 mm clear of each column), web holes punched by the supplier · web on top, open side down, dropped onto shop-welded L75×75×6 brackets and bolted on site (2 × M12 each end) · bottom row raised 300 mm off the wall top, hung from the SHS tie by the midspan M12 rod (no support on the wall)", measure: "length" },
-  girtCleats: { name: "Girt bracket", section: "Angle L75×75×6 × 80 mm (Tan, 30 Sep 2:24 PM) · upright leg SHOP-welded to the column side face, pointing down (5 mm fillet down both sides and across the bottom) · flat leg inside the C under the web, between the lips (80 mm vs about 94 mm clear) · 2 × 14×22 slots 45 mm from the column, 40 mm apart across the web", measure: "size" },
-  girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's flat leg (45 mm from the column, 40 mm apart), washer and nut underneath · girts are never welded", measure: "length" },
+  girtCleats: { name: "Girt bracket", section: "L75×75×6 cut 4 in (101.6 mm) (Tan, 17 Oct 2026) · L-shaped cut end SHOP-welded to the column side face (fillet all round the L, about 300 mm of weld on the 4.5 mm SHS wall: NOT checked, engineer to check) · projects straight out along the wall, horizontal leg UP 75 mm wide centred on the column face, other leg a 75 mm fin hanging down on the inner (house) side · the girt drops over it from above: 75 mm leg through the 93 mm lip opening, fin inside the flanges · 2 × 14×22 slots along the wall at 30 and 75 mm from the column face · girt starts 5 mm from the column face", measure: "size" },
+  girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's horizontal leg (2 in line along the wall at 30 and 75 mm from the column face, in the 14×22 slots), washer and nut underneath · girts are never welded", measure: "length" },
   girtRods: {
     name: "Girt tie rod",
     section: "M12 threaded rod · 2 lines per bay at the third points of the girt span, each line from the bottom girt through the middle girt up to the SHS 125 column tie, screwed into a coupling nut on an M12 stud welded under the tie · 25 mm in from the girts' outer flange · nuts both sides of each girt web",

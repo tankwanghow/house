@@ -279,9 +279,12 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "shopConnections",
-        title: "Tie and girt connections",
-        tag: "≈66%",
-        recommendation: "The engineer must confirm the eave-strut force once the side bracing is designed.",
+        title: "Tie and girt brackets: weld and cantilever not checked",
+        tag: "not checked",
+        problem:
+          "Each tie and girt bracket is an L75×75×6 whose L-shaped end is shop-welded to the column's 4.5 mm SHS side face (about 300 mm of fillet all round the L), projecting straight out along the wall with its horizontal leg up and a 75 mm fin hanging down on the inner side. NOT checked, engineer to check: (1) the weld and the thin 4.5 mm wall it lands on: the weld is on the thin flat face, not on a stiffened edge, and the profile is unsymmetrical (the fin is on one edge), so it can flex and peel; (2) the 6 in (152.4 mm) tie bracket carries the eave strut and ceiling loads 152 mm out from that weld, and the 4 in girt bracket carries the girt and wind reaction 101.6 mm out, as eccentric loads on the weld. The tie is 125 wide on a 75 mm leg, so only the middle 75 mm of its bottom wall is supported. No capacities are given here.",
+        recommendation:
+          "The engineer must check the weld and the 4.5 mm column wall for both brackets, and confirm the eave-strut force once the side bracing is designed. A stiffener, through-plate or seat could be needed under the 6 in tie bracket.",
       },
       {
         id: "roofBracing",

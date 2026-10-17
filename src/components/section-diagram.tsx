@@ -498,7 +498,7 @@ export function SectionDiagram() {
           ["Eave mesh (SS304)", colour.netting],
           ["Concrete", colour.concrete],
           ["Knee fork plates (6 mm, flush outside) + M20 bolts; RHS end plates", colour.knee],
-          ["Tie seat angles and girt cleats sit behind each column (see the 3D view)", colour.girtEdge],
+          ["Tie and girt brackets project along the wall from each column (see the 3D view)", colour.girtEdge],
         ].map(([label, fill]) => (
           <span key={label} className="inline-flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-sm" style={{ background: fill }} />

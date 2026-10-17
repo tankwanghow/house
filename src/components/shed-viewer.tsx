@@ -570,21 +570,27 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       const connBoltMat = new THREE.MeshStandardMaterial({ color: 0x3f474c, metalness: 0.75, roughness: 0.38 });
       const tieCapMat = new THREE.MeshStandardMaterial({ color: 0x1d1f21, metalness: 0.05, roughness: 0.7 });
       const hex = (af: number) => af / Math.sqrt(3);
-      /** Angle geometry with its heel at the origin (column face, tie underside); `dir` points out of the column. */
-      const angleGeo = (dir: number) => {
-        const flat = new THREE.BoxGeometry(ta.leg, ta.thickness, ta.length).translate((dir * ta.leg) / 2, -ta.thickness / 2, 0);
-        const upright = new THREE.BoxGeometry(ta.thickness, ta.leg - ta.thickness, ta.length).translate(
-          (dir * ta.thickness) / 2,
-          -ta.thickness - (ta.leg - ta.thickness) / 2,
-          0,
+      /**
+       * Bracket (Tan, 17 Oct 2026): L75×75×6 whose L-shaped end is on the column side face and which projects straight
+       * out along the wall `length`; horizontal leg UP (top at the origin, 75 wide across the wall, centred), the other
+       * leg a fin hanging down on the INNER (house) edge. `dir` points out of the column along the wall, `sign` is the
+       * wall side (+1 / -1) so the fin lands on the side nearer the house centre line.
+       */
+      const bracketGeo = (b: { leg: number; thickness: number; length: number }, dir: number, sign: number) => {
+        const flat = new THREE.BoxGeometry(b.length, b.thickness, b.leg).translate((dir * b.length) / 2, -b.thickness / 2, 0);
+        const fin = new THREE.BoxGeometry(b.length, b.leg - b.thickness, b.thickness).translate(
+          (dir * b.length) / 2,
+          -b.thickness - (b.leg - b.thickness) / 2,
+          -sign * (b.leg / 2 - b.thickness / 2),
         );
-        const merged = mergeGeometries([flat, upright], false) ?? flat.clone();
+        const merged = mergeGeometries([flat, fin], false) ?? flat.clone();
         flat.dispose();
-        upright.dispose();
+        fin.dispose();
         geos.push(merged);
         return merged;
       };
-      const angleGeos = { [-1]: angleGeo(-1), [1]: angleGeo(1) } as Record<number, import("three").BufferGeometry>;
+      const angleGeos: Record<string, import("three").BufferGeometry> = {};
+      for (const d of [-1, 1]) for (const sg of [-1, 1]) angleGeos[`${d}${sg}`] = bracketGeo(ta, d, sg);
       // M16 × 35: head inside the tie on its bottom wall, shank down through the tie wall and the angle's flat leg,
       // washer and nut under the leg. Origin at the tie's underside.
       const tw = spec.columnTie.wall;
@@ -610,9 +616,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
           addMember(new THREE.Vector3(xA, yTie, z), new THREE.Vector3(xB, yTie, z), tieW, tieD, steel, groups.ties);
           for (const [face, dir, end] of [[faceA, 1, xA], [faceB, -1, xB]] as const) {
             const colX = face - (dir * col) / 2;
-            cluster("tieAngles", colX, z, angleGeos[dir], connMat, [face, yTieUnder, sign * zCol], { size: [ta.leg, ta.leg, ta.length] });
-            for (const g of [-1, 1]) {
-              cluster("tieBolts", colX, z, tieBoltGeo, connBoltMat, [face + dir * ta.boltAt, yTieUnder, sign * zCol + (g * ta.gauge) / 2], {
+            cluster("tieAngles", colX, z, angleGeos[`${dir}${sign}`], connMat, [face, yTieUnder, sign * zCol], { size: [ta.length, ta.leg, ta.leg] });
+            for (const at of ta.boltAts) {
+              cluster("tieBolts", colX, z, tieBoltGeo, connBoltMat, [face + dir * at, yTieUnder, sign * zCol], {
                 length: tieBoltLen,
               });
             }
@@ -1360,24 +1366,11 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       // down so water cannot collect in it; the 127 mm depth runs out through the column, inner flange on the
       // lining's flat foam face, outer flange 2 mm past the column's outside face.
       const girtLen = spec.bay - col - 2 * spec.girt.endGap;
-      // Girt connection (Tan, 30 Sep 2026: no site welding; L75×75×6, 2:24 PM): an angle SHOP-welded to the column
-      // side face, upright leg pointing down, flat leg inside the C right under the web; SITE: 2 × M12 across the web.
+      // Girt connection (Tan, 17 Oct 2026): L75×75×6 × 101.6, L-shaped end SHOP-welded to the column side face,
+      // projecting out along the wall, horizontal leg UP under the web, fin down on the inner side; SITE: 2 × M12 along it.
       const gc = spec.girtCleat;
-      /** Heel at the origin (column face, flat-leg top); `dir` points out of the column. */
-      const girtAngleGeo = (dir: number) => {
-        const flat = new THREE.BoxGeometry(gc.leg, gc.thickness, gc.width).translate((dir * gc.leg) / 2, -gc.thickness / 2, 0);
-        const upright = new THREE.BoxGeometry(gc.thickness, gc.leg - gc.thickness, gc.width).translate(
-          (dir * gc.thickness) / 2,
-          -gc.thickness - (gc.leg - gc.thickness) / 2,
-          0,
-        );
-        const merged = mergeGeometries([flat, upright], false) ?? flat.clone();
-        flat.dispose();
-        upright.dispose();
-        geos.push(merged);
-        return merged;
-      };
-      const girtAngles = { [-1]: girtAngleGeo(-1), [1]: girtAngleGeo(1) } as Record<number, import("three").BufferGeometry>;
+      const girtAngles: Record<string, import("three").BufferGeometry> = {};
+      for (const d of [-1, 1]) for (const sg of [-1, 1]) girtAngles[`${d}${sg}`] = bracketGeo(gc, d, sg);
       const gw = spec.girt.section.wall;
       const girtBoltLen = gw + gc.thickness + 0.0025 + 0.0108 + 0.003;
       // Origin at the top of the girt web: head on the web, nut under the cleat.
@@ -1406,11 +1399,11 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
           const zc = g.zIn + (g.sign * spec.purlin.depth) / 2;
           for (const [face, dir] of [[faceA, 1], [faceB, -1]] as const) {
             const colX = face - (dir * col) / 2;
-            cluster("girtCleats", colX, zc, girtAngles[dir], connMat, [face, g.yTop - gw, zc], {
-              size: [gc.leg, gc.leg, gc.width],
+            cluster("girtCleats", colX, zc, girtAngles[`${dir}${g.sign}`], connMat, [face, g.yTop - gw, zc], {
+              size: [gc.length, gc.leg, gc.leg],
             });
-            for (const s of [-1, 1]) {
-              cluster("girtBolts", colX, zc, girtBoltGeo, connBoltMat, [face + dir * gc.boltAt, g.yTop, zc + (s * gc.gauge) / 2], { length: girtBoltLen });
+            for (const at of gc.boltAts) {
+              cluster("girtBolts", colX, zc, girtBoltGeo, connBoltMat, [face + dir * at, g.yTop, zc], { length: girtBoltLen });
             }
           }
         }
