@@ -1085,7 +1085,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         groups.roof.add(group);
       }
 
-      // Ceiling profile (Tan's drawing, 760 cover, 35 rib): 13 plain sheets across, centred, 60 mm short of each wall (see
+      // TH Superior Rib 35 metal decking (Thung Hing): 13 plain sheets across, centred, 60 mm short of each wall (see
       // frameLayout); ribs DOWN. 27 identical full major ribs at 380 mm (13 × 2 + 1) with 3 shallow minor ribs in every pan.
       // The mesh runs from the first rib's outer foot (the lap-edge side, towards -z) to the last rib's outer foot.
       const ceilingLength = spec.length - chordW;

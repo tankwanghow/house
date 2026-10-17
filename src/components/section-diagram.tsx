@@ -250,7 +250,7 @@ export function SectionDiagram() {
           <polygon key={`col${c.z}`} points={pts(rect(c.z - col / 2, c.z + col / 2, c.bottom, c.top))} fill={colour.steel} />
         ))}
 
-        {/* Ceiling sheet (option A, Tan 1 Oct 2026): plain 760-cover 35 mm-rib profile, no foam, ribs down (crests at 4.000 clear), hung 1 mm under the beam */}
+        {/* Ceiling sheet (option A, Tan 1 Oct 2026): TH Superior Rib 35 metal decking (Thung Hing), no foam, ribs down (crests at 4.000 clear), hung 1 mm under the beam */}
         <line
           x1={sx(frame.ceiling.z0)}
           y1={sy(frame.ceiling.y - spec.ceilingSheet.rib / 2)}

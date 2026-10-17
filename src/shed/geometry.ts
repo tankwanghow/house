@@ -90,10 +90,13 @@ export const spec = {
    */
   ceilingHanger: { leg: 0.05, thickness: 0.005, bolt: 0.01, bottomGap: 0.02, topGap: 0.02, slot: { width: 0.011, length: 0.03 }, lockScrews: 2 },
   /**
-   * Ceiling profile (Tan's drawing, 760 cover, 35 rib): plain zincalume TCT 0.35 mm, no foam, ribs DOWN. Product name and
-   * supplier are NOT given on the drawing: confirm them. Read from the drawing: effective cover 760 ± 6, major rib 35 ± 1
-   * high with a 26 mm crest. The drawing shows major ribs at the two cover edges and one in the middle, so 2 pans of
-   * `ribPitch` 380 mm per cover (read from the drawing; the pan is 318 mm clear between rib feet), not 3: each sheet has its
+   * TH Superior Rib 35 metal decking (Thung Hing), https://thunghing.com.my/product/th-superior-rib-35-metal-decking/ :
+   * plain zincalume TCT 0.35 mm (the page lists 0.30, 0.35, 0.40 and 0.47 TCT), no foam, ribs DOWN. PUBLISHED on the page and
+   * in the 2026 catalogue drawing: rib height 35 ± 1, major rib crest 26, a 35 mm dimension on the minor rib, effective cover
+   * 760 ± 6 on the drawing and in one page bullet (the page's Dimension list and the catalogue text say 750: CONFLICT, to be
+   * confirmed with Thung Hing; 760 is kept because the drawing's ribs are 2 × 380 apart). NOT published: major rib pitch,
+   * rib base, minor rib spacing and height, weight per m², span. The drawing shows major ribs at the two cover edges and one in the middle, so 2 pans of
+   * `ribPitch` 380 mm per cover (measured off the drawing, not dimensioned; the pan is 318 mm clear between rib feet), not 3: each sheet has its
    * left edge rib partly outside the cover (centre `leftRib` = −31 mm from the cover start) and its right edge rib
    * inside it (centre 31 mm before the cover end); at a joint the next sheet's left rib nests over this rib, so the visible
    * rib lines are one regular 380 mm pitch: `sheets` × 2 + 1 = 27. The rib base width (62 mm, flank 18 mm each side) is
@@ -217,7 +220,7 @@ export const spec = {
    * (3 per sheet), 35 mm high with a 24 mm crest; the ~66 mm rib base and the four small pan flutes
    * (~12 mm wide, ~2 mm high) are scaled off that drawing. `lift` stands the backing just off the purlins.
    * Tan, 1 Oct 2026 (option A, reversing the 30 Sep 7:12 PM swap): this PUR 25 sandwich is the ROOF again, rib sheet
-   * 0.47 TCT; the CEILING is the plain 760-cover, 35 mm rib profile of Tan's drawing alone (spec.ceilingSheet), zincalume 0.35 TCT, no foam, ribs down. The wall lining
+   * 0.47 TCT; the CEILING is the plain TH Superior Rib 35 profile alone (spec.ceilingSheet), zincalume 0.35 TCT, no foam, ribs down. The wall lining
    * stays PUR 25 with a 0.40 TCT rib sheet. Backing sheets: confirm the thickness on the quote.
    */
   roof: {
@@ -980,7 +983,7 @@ export function frameLayout(endFrame = false) {
   const zFoamFace = zInner - spec.lining.faceGap;
   const zPan = zFoamFace - spec.roof.foam - 0.001;
   const zCrest = zPan - spec.roof.rib;
-  // Ceiling profile (Tan's drawing, 760 cover, 35 rib), 0.35 TCT, no foam, RIBS DOWN. Its pans are its top face, 1 mm under
+  // TH Superior Rib 35 metal decking (Thung Hing), 0.35 TCT, no foam, RIBS DOWN. Its pans are its top face, 1 mm under
   // the truss, so `top` and `y` are the same level; the crests hang 35 mm lower. The sheets start 60 mm from each wall.
   const yCeilingTop = yColumnTop - 0.001;
   const yCeiling = yCeilingTop;
@@ -1157,7 +1160,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
     measure: "length",
     lengthLabel: "Sheet run down the slope",
   },
-  ceiling: { name: "Ceiling profile (Tan's drawing, 760 cover, 35 rib)", section: "Plain zincalume TCT 0.35 mm, no foam · PRODUCT NAME AND SUPPLIER NOT GIVEN on the drawing: confirm them · 760 ± 6 mm effective cover, 35 ± 1 mm major ribs with a 26 mm crest, major ribs at 380 mm (2 pans per cover, read from the drawing), 3 shallow 35 mm minor ribs in every pan · 13 sheets across the 10.0 m inner width, centred (13 × 760 = 9880 mm), leaving 60 mm to each long wall, closed by the ceiling edge angle · 27 identical full major ribs (13 × 2 + 1, the sheet joints nest as lap ribs), the outer ones in the 60 mm gap · ribs DOWN (crests at 4.000 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access", measure: "size" },
+  ceiling: { name: "TH Superior Rib 35 metal decking (Thung Hing)", section: "https://thunghing.com.my/product/th-superior-rib-35-metal-decking/ · plain zincalume TCT 0.35 mm, no foam (the page lists 0.30, 0.35, 0.40 and 0.47 TCT; thickness kept at 0.35) · published: 35 ± 1 mm rib height, 26 mm crest, 35 mm on the minor rib, cover 760 ± 6 mm on the drawing (the page's Dimension list and the catalogue text say 750 mm: to confirm with Thung Hing) · major ribs at 380 mm (2 pans per cover, measured off the drawing, not published), 3 shallow minor ribs in every pan (spacing 85 mm and height 3 mm are estimates), rib base 62 mm (estimate) · weight per m² and span NOT published · 13 sheets across the 10.0 m inner width, centred (13 × 760 = 9880 mm), leaving 60 mm to each long wall, closed by the ceiling edge angle · 27 identical full major ribs (13 × 2 + 1, the sheet joints nest as lap ribs), the outer ones in the 60 mm gap · ribs DOWN (crests at 4.000 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access", measure: "size" },
   capping: { name: "Ridge cap", section: "24 in girth zincalume 0.47 mm · 8 ft pieces", measure: "length", lengthLabel: "Run" },
   sagRods: { name: "Purlin tie rod", section: "12 mm rod", measure: "length" },
   roofBraces: { name: "Roof X cable", section: "12 mm galvanized wire rope", measure: "length" },
