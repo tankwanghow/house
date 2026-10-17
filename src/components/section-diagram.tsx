@@ -250,12 +250,12 @@ export function SectionDiagram() {
           <polygon key={`col${c.z}`} points={pts(rect(c.z - col / 2, c.z + col / 2, c.bottom, c.top))} fill={colour.steel} />
         ))}
 
-        {/* Ceiling sheet (option A, Tan 1 Oct 2026): plain Mega Rib 35, no foam, ribs down (crests at 4.000 clear), hung 1 mm under the beam */}
+        {/* Ceiling sheet (option A, Tan 1 Oct 2026): plain Mega Rib 30, no foam, ribs down (crests at 4.0065 clear), hung 1 mm under the beam */}
         <line
           x1={sx(frame.ceiling.z0)}
-          y1={sy(frame.ceiling.y - rib / 2)}
+          y1={sy(frame.ceiling.y - spec.ceilingSheet.rib / 2)}
           x2={sx(frame.ceiling.z1)}
-          y2={sy(frame.ceiling.y - rib / 2)}
+          y2={sy(frame.ceiling.y - spec.ceilingSheet.rib / 2)}
           stroke={colour.ceiling}
           strokeWidth="1.1"
           strokeDasharray="2.4 1.2"
@@ -312,18 +312,19 @@ export function SectionDiagram() {
             strokeDasharray="1.2 0.8"
           />
         ))}
-        {/* Ceiling edge angle (behind the section cut, between the columns): flat leg on the tie top over the sheet's edge, upright at the heel */}
+        {/* Ceiling edge angle (behind the section cut, between the columns): flat leg from the wall plane over the gap and the sheet's edge, 53 mm leg down on the wall side */}
         {frame.columns.map((c) => {
           const ce = spec.ceilingEdge;
           const dir = -Math.sign(c.z);
-          const heel = c.z + dir * (col / 2 - ce.onTie);
+          const wall = c.z + dir * (col / 2);
+          const yTop = frame.ceiling.top + ce.thickness;
           return (
             <polyline
               key={`edge${c.z}`}
               points={pts([
-                { z: heel, y: yColumnTop + ce.up },
-                { z: heel, y: yColumnTop },
-                { z: heel + dir * ce.flat, y: yColumnTop },
+                { z: wall, y: yTop - ce.up },
+                { z: wall, y: yTop },
+                { z: wall + dir * ce.flat, y: yTop },
               ])}
               fill="none"
               stroke={colour.girtEdge}
@@ -464,7 +465,7 @@ export function SectionDiagram() {
         />
         <Dim
           a={{ z: 0.9, y: frame.yCenter }}
-          b={{ z: 0.9, y: frame.ceiling.y - spec.roof.rib }}
+          b={{ z: 0.9, y: frame.ceiling.y - spec.ceilingSheet.rib }}
           normal={{ z: 1, y: 0 }}
           offset={0}
           label={`${metres(spec.ceilingClear)} floor to ceiling`}

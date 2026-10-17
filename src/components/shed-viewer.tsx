@@ -14,6 +14,7 @@ import {
   type PartId,
   liningInfo,
   girtRodDx,
+  ceilingEdgePieces,
 } from "@/shed/geometry";
 import { snapHit, type SnapKind } from "@/shed/measure";
 import type { SafetyFocus } from "@/shed/safety";
@@ -930,7 +931,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
 
       const DRAW_FLUTES = false;
       /** Sheet profile across `width`; `phase` shifts the module pattern so both edges can land on flat pans. */
-      const profile = (width: number, phase = 0) => {
+      const profile = (width: number, phase = 0, r: { ribPitch: number; ribBase: number; ribCrest: number; flutesPerPan?: number; fluteWidth?: number } = spec.roof, rh = ribH) => {
         const pts: [number, number][] = [];
         const push = (x: number, y: number) => {
           if (phase > 0 && x > width + 1e-4) return;
@@ -944,22 +945,21 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         // Mega Rib 35: one trapezoid rib per 241 mm pitch, then a flat pan. The four ~2 mm pan flutes are
         // not drawn: across the 105 m roof and lining they would quadruple the triangle count (slow on
         // phones, and slower Measure taps) for a detail that is invisible beyond arm's length.
-        const r = spec.roof;
         const flank = (r.ribBase - r.ribCrest) / 2;
         const pan = r.ribPitch - r.ribBase;
         const modules = Math.ceil((width + phase) / r.ribPitch - 1e-9);
         for (let m = 0; m < modules; m += 1) {
           const o = m * r.ribPitch - phase;
           push(o, 0);
-          push(o + flank, ribH);
-          push(o + flank + r.ribCrest, ribH);
+          push(o + flank, rh);
+          push(o + flank + r.ribCrest, rh);
           push(o + r.ribBase, 0);
-          for (let k = 1; k <= (DRAW_FLUTES ? r.flutesPerPan : 0); k += 1) {
-            const c = r.ribBase + (pan * k) / (r.flutesPerPan + 1);
-            push(o + c - r.fluteWidth / 2, 0);
-            push(o + c - r.fluteWidth / 4, fluteH);
-            push(o + c + r.fluteWidth / 4, fluteH);
-            push(o + c + r.fluteWidth / 2, 0);
+          for (let k = 1; k <= (DRAW_FLUTES ? spec.roof.flutesPerPan : 0); k += 1) {
+            const c = r.ribBase + (pan * k) / (spec.roof.flutesPerPan + 1);
+            push(o + c - spec.roof.fluteWidth / 2, 0);
+            push(o + c - spec.roof.fluteWidth / 4, fluteH);
+            push(o + c + spec.roof.fluteWidth / 4, fluteH);
+            push(o + c + spec.roof.fluteWidth / 2, 0);
           }
           push(o + r.ribPitch, 0);
         }
@@ -990,8 +990,10 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         material: import("three").Material,
         z0 = 0,
         phase = 0,
+        prof: Parameters<typeof profile>[2] = spec.roof,
+        profRib = ribH,
       ) => {
-        const pts = profile(width, phase);
+        const pts = profile(width, phase, prof, profRib);
         const positions: number[] = [];
         const dir = down ? -1 : 1;
         const z1 = z0 + length;
@@ -1081,15 +1083,12 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         groups.roof.add(group);
       }
 
-      // Runs over the wall lining to its pan line; the lining stops 2 mm under this panel's rib crests (see frameLayout).
+      // 13 plain Mega Rib 30 sheets across, centred, 125 mm short of each wall (see frameLayout); ribs DOWN.
       const ceilingWidth = frameMid.ceiling.z1 - frameMid.ceiling.z0;
       const ceilingLength = spec.length - chordW;
-      // Both edges land on flat pans, so no ceiling rib runs into the lining's ribs at the corner.
-      // Option A (Tan, 1 Oct 2026): plain Mega Rib 35 ceiling sheet, 0.35 TCT, no foam, RIBS DOWN (crests at 4.000 clear).
-      // Its pans are at frameMid.ceiling.y, 1 mm under the truss.
-      const ceilingPhase = panPhase(ceilingWidth);
+      // Its pans are at frameMid.ceiling.y, 1 mm under the truss; whole 250 mm modules from the first sheet edge, so phase 0.
       const ceiling = new THREE.Group();
-      ceiling.add(ribMesh(ceilingWidth, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, ceilingPhase));
+      ceiling.add(ribMesh(ceilingWidth, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, 0, spec.ceilingSheet, spec.ceilingSheet.rib * scale));
       ceiling.rotation.y = Math.PI / 2;
       ceiling.position.set(-ceilingLength / 2, 0, 0);
       groups.ceiling.add(ceiling);
@@ -1324,40 +1323,29 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         }
       }
 
-      // Ceiling edge angles: flat leg on the SHS tie top, running past the tie's inside face over the ceiling sheet's
-      // edge pan (screwed up through the pan on a sealant bead); upright leg at the heel, on the tie. 3 pieces per bay
-      // per side, cut to fit between the columns and the cross purlins (whose flanges point to -x from their web).
+      // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 178 mm flat leg starts at the wall
+      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 125 mm gap and lapping 53 mm
+      // onto the sheet; the 53 mm leg points down on the wall side, in the lining's face gap, with the lining against it.
+      // Cut between the cross purlins (whose flanges stand on the pans), so the legs never meet a purlin.
       {
         const ce = spec.ceilingEdge;
-        const edgeMat = new THREE.MeshStandardMaterial({ color: 0xa9b3b9, metalness: 0.6, roughness: 0.38 });
-        const yFlat = yTie + tieD / 2;
-        const zInside = zCol - col / 2;
-        const g = ce.gap;
-        const f = spec.crossPurlin.flange;
-        for (let bay = 0; bay < derived.bays; bay += 1) {
-          const xF = x0 + bay * spec.bay;
-          const runs: [number, number][] = [
-            [xF + col / 2 + g, xF + 2 - f - g],
-            [xF + 2 + g, xF + 4 - f - g],
-            [xF + 4 + g, xF + spec.bay - col / 2 - g],
-          ];
-          for (const sign of [-1, 1]) {
-            const zHeel = sign * (zInside + ce.onTie);
-            const zToe = sign * (zInside + ce.onTie - ce.flat);
-            for (const [xa, xb] of runs) {
-              const len = xb - xa;
-              const piece = new THREE.Group();
-              const flatGeo = new THREE.BoxGeometry(len, ce.thickness, ce.flat);
-              const upGeo = new THREE.BoxGeometry(len, ce.up, ce.thickness);
-              geos.push(flatGeo, upGeo);
-              const flat = new THREE.Mesh(flatGeo, edgeMat);
-              flat.position.set((xa + xb) / 2, yFlat + ce.thickness / 2, (zHeel + zToe) / 2);
-              const upLeg = new THREE.Mesh(upGeo, edgeMat);
-              upLeg.position.set((xa + xb) / 2, yFlat + ce.up / 2, zHeel - (sign * ce.thickness) / 2);
-              piece.add(flat, upLeg);
-              piece.userData.length = len;
-              groups.ceilingEdge.add(piece);
-            }
+        const edgeMat = new THREE.MeshStandardMaterial({ color: 0xa9b3b9, metalness: 0.6, roughness: 0.38, side: THREE.DoubleSide });
+        const yFlatBottom = frameMid.ceiling.top;
+        const zWall = zCol - col / 2;
+        for (const sign of [-1, 1]) {
+          for (const [xa, xb] of ceilingEdgePieces) {
+            const len = xb - xa;
+            const piece = new THREE.Group();
+            const flatGeo = new THREE.BoxGeometry(len, ce.thickness, ce.flat);
+            const upGeo = new THREE.BoxGeometry(len, ce.up, ce.thickness);
+            geos.push(flatGeo, upGeo);
+            const flat = new THREE.Mesh(flatGeo, edgeMat);
+            flat.position.set((xa + xb) / 2, yFlatBottom + ce.thickness / 2, sign * (zWall - ce.flat / 2));
+            const upLeg = new THREE.Mesh(upGeo, edgeMat);
+            upLeg.position.set((xa + xb) / 2, yFlatBottom + ce.thickness - ce.up / 2, sign * (zWall - ce.thickness / 2));
+            piece.add(flat, upLeg);
+            piece.userData.length = len;
+            groups.ceilingEdge.add(piece);
           }
         }
       }

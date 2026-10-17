@@ -9,15 +9,20 @@ export const spec = {
   columnCentres: 10.125,
   /**
    * Floor top at the column face (spec.floor.edge) up to the column top. Set (Tan, 28 Sep 9:02 PM) so the clear height
-   * from the finished floor to the underside of the ceiling sheet (its rib crests, which hang down) is 4.000 m at the
-   * floor's high point on the centre line (6 in at the ridge line): 4.000 + the 2 in floor fall + 1 mm + the 35 mm rib.
+   * from the finished floor to the underside of the ceiling sheet (its rib crests, which hang down) was 4.000 m at the
+   * floor's high point on the centre line (6 in at the ridge line): 4.000 + the 2 in floor fall + 1 mm + the 35 mm rib
+   * (the Mega Rib 35 ceiling). The steel is kept; with the 28.5 mm Mega Rib 30 ceiling the crests are 4.0065 m clear.
    * At the walls, where the floor is 2 in lower, the clear height is 4.051 m.
    */
   // Tan, 1 Oct 2026 (option A): the PU 25 panel is the ROOF again and the ceiling is a plain 0.35 sheet, so the column top
-  // drops back the 26 mm it rose for the PU ceiling panel (30 Sep 7:12 PM); the ceiling's rib crests stay at 4.000 m clear.
+  // drops back the 26 mm it rose for the PU ceiling panel (30 Sep 7:12 PM); the steel is kept when the ceiling changes to Mega Rib 30 (crests at 4.0065 m clear).
   eaveAtColumn: 4 + (6 - 4) * 0.0254 + 0.001 + 0.035,
-  /** Clear height, finished floor (high point) to the underside of the ceiling sheet. */
-  ceilingClear: 4,
+  /**
+   * Clear height, finished floor (high point) to the underside of the ceiling sheet's rib crests. The column steel is
+   * unchanged when the ceiling went from Mega Rib 35 to Mega Rib 30 (28.5 mm ribs), so the crests hang 6.5 mm less
+   * and the clear height is 6.5 mm more than the earlier 4.000 m.
+   */
+  ceilingClear: 4 + 0.035 - 0.0285,
   pitchDeg: 10,
   /** Mill bar length. This is the rafter's longest edge (top edge, ridge plumb cut to square eave cut). */
   rafterLength: 6,
@@ -86,14 +91,25 @@ export const spec = {
    */
   ceilingHanger: { leg: 0.05, thickness: 0.005, bolt: 0.01, bottomGap: 0.02, topGap: 0.02, slot: { width: 0.011, length: 0.03 }, lockScrews: 2 },
   /**
-   * Ceiling edge angle along each wall: a cold-formed galvanised angle, `flat` × `up` × `thickness`. The flat leg lies on the
-   * SHS column tie's top (`onTie` of it, clear of the eave netting), its heel and the `up` leg on the tie, and runs
-   * `flat - onTie` past the tie's inside face into the house, over the ceiling sheet's edge pan (the sheet stops at the
-   * lining's pan line, 28 mm in from the tie). Cut to fit between the cross purlins and the columns, `gap` clear of each,
-   * so 3 pieces per bay per side. SITE: self-drilling screws down into the tie at `screwPitch`, and up through the
-   * ceiling's edge pan into the flat leg at `screwPitch`, on a sealant bead, so the edge is held and sealed all along.
+   * Ceiling sheet (Tan, 17 Oct 2026): plain AJIYA Mega Rib 30, zincalume TCT 0.35 mm, no foam, ribs DOWN. 750 mm effective
+   * cover, ribs at 250 mm pitch (3 per sheet), 28.5 mm high, 24 mm wide at the crest; the rib base width is scaled from the
+   * Mega Rib 35 drawing (not read off a Mega Rib 30 drawing). `sheets` across the inner width, centred, so
+   * the sheets cover `sheets × cover` and leave an equal gap to each long wall (125 mm), closed by the ceiling edge angle.
+   * The pans are 1 mm under the truss beams; the rib crests hang down.
    */
-  ceilingEdge: { flat: 0.1, up: 0.05, thickness: 0.0016, onTie: 0.03, gap: 0.005, screwPitch: 0.3 },
+  ceilingSheet: { cover: 0.75, ribPitch: 0.25, rib: 0.0285, ribCrest: 0.024, ribBase: 0.058, sheets: 13, skin: 0.00035 },
+  /**
+   * Ceiling edge angle (Tan, 17 Oct 2026, sketch ce4): a 12 in (305 mm) strip of the same 0.35 mm zincalume sheet folded
+   * to an angle on each long wall, full length. The `flat` leg (178 mm) starts at the wall plane (the columns' inside
+   * face) and lies flat ON TOP of the ceiling sheet: it covers the 125 mm gap and laps `flat − gap` (53 mm) onto the
+   * sheet's edge (the sheet is under it, house side below). The `up` leg (53 mm) points DOWN on the wall side, in the
+   * lining's 2 mm face gap; the wall lining sits against it and is screwed through it into the SHS tie. Cut in lengths
+   * between the cross purlins (`gap` clear of each flange). SITE: stitch screws through the lap and the sheet's edge
+   * pan at `screwPitch`, a silicone / closure strip under the flat leg, and the lining screws through the down leg at
+   * `screwPitch`. Developed 178 + 53 = 231 mm of the 305 mm blank (74 mm spare, for bends or a hem: confirm with the
+   * folder). No capacity is claimed for it.
+   */
+  ceilingEdge: { blank: 12 * 0.0254, flat: 0.178, up: 0.053, thickness: 0.00035, gap: 0.005, screwPitch: 0.3 },
   /**
    * Tie bracket (Tan, 17 Oct 2026): L75×75×6 cut 6 in (152.4 mm). Its L-shaped cut END is SHOP-welded to the column
    * side face (fillet all round the L profile, about 300 mm of weld, on the 4.5 mm SHS wall: NOT checked, engineer to
@@ -129,7 +145,7 @@ export const spec = {
    * SITE: the truss drops between the fins and 2 M20 grade 8.8 bolts (the code's existing bolt size; Tan did not
    * give a new one) go horizontally through both fins and the heel, in `hole` (21 mm) holes, preloaded.
    * Rows `boltRows` above the cap top (lower row in the beam, upper row in the rafter). The column steel stops `cap`
-   * below the truss seat, so the seat, ceiling (4.000 m clear), tie and lining are unchanged.
+   * below the truss seat, so the seat, ceiling, tie and lining are unchanged.
    * History kept for the checks: the 30 Sep 6 mm fork (215 mm wide, 4 bolts) FAILED the rough checks (fin base about
    * 227% elastic, the cap's spread into the column wall about 151%; review/knee6mm_calc). Those checks are not
    * computed by this code and have NOT been redone for the 125 mm wide, 2-bolt fork.
@@ -186,7 +202,7 @@ export const spec = {
    * (3 per sheet), 35 mm high with a 24 mm crest; the ~66 mm rib base and the four small pan flutes
    * (~12 mm wide, ~2 mm high) are scaled off that drawing. `lift` stands the backing just off the purlins.
    * Tan, 1 Oct 2026 (option A, reversing the 30 Sep 7:12 PM swap): this PUR 25 sandwich is the ROOF again, rib sheet
-   * 0.47 TCT; the CEILING is the plain Mega Rib 35 profile alone, zincalume 0.35 TCT, no foam, ribs down. The wall lining
+   * 0.47 TCT; the CEILING is the plain Mega Rib 30 profile alone (spec.ceilingSheet), zincalume 0.35 TCT, no foam, ribs down. The wall lining
    * stays PUR 25 with a 0.40 TCT rib sheet. Backing sheets: confirm the thickness on the quote.
    */
   roof: {
@@ -237,8 +253,8 @@ export const spec = {
    * the panel's metal-backed face is `faceGap` (2 mm) inside that plane, so it passes 2 mm clear of the concrete.
    * Seal that 2 mm joint at the wall's top edge so water on the panel's back runs onto the sloped top, not down
    * behind the skirt. The wall panels are PU foam the full length (no bare strip), so the foam shows at the foot:
-   * seal it with a bead of PU/silicone sealant or a small bottom trim. The ceiling runs
-   * over the lining to the lining's pan line; the lining stops `ceilingGap` under the ceiling's (downward) rib crests.
+   * seal it with a bead of PU/silicone sealant or a small bottom trim. The ceiling sheets
+   * stop 125 mm from the wall; the lining runs up to `ceilingGap` under the ceiling edge angle's flat leg, against its down leg.
    */
   lining: { faceGap: 0.002, wallLap: 0.05, ceilingGap: 0.002 },
   /**
@@ -317,23 +333,58 @@ export const derived = {
 const frames = spec.length / spec.bay + 1;
 const purlinRun = spec.length + spec.rafter.width + 2 * spec.purlin.endOverhang;
 const roofSheetsPerSide = Math.ceil(purlinRun / spec.roof.cover - 1e-9);
-const ceilingSheets = Math.ceil((spec.columnCentres - spec.column.side) / spec.roof.cover - 1e-9);
+const ceilingSheets = spec.ceilingSheet.sheets;
 const ridgeCaps = Math.ceil((purlinRun - spec.ridgeCap.lap) / (spec.ridgeCap.piece - spec.ridgeCap.lap) - 1e-9);
 const purlinsPerSide = 7;
 const sagRods = (spec.length / spec.bay) * 2 * ((purlinsPerSide - 1) * 2 + 1);
 const ceilingLong = 3 * (spec.length / spec.bay);
 const ceilingCross = (spec.length / spec.bay) * 2;
 const ceilingBolts = 3 * (spec.length / spec.bay - 1);
-/** Ceiling edge angles: 3 pieces per bay per side, between the columns and the two cross purlins. */
-const ceilingEdges = ceilingCross * 3;
-/** Ceiling edge angle cut lengths in one bay: column face to the first cross purlin, between the two, second to the next column. */
-export const ceilingEdgeCuts = (() => {
-  const g = spec.ceilingEdge.gap;
+/**
+ * Ceiling edge angle pieces along one wall (x from the building centre): the full ceiling length between the end rafters,
+ * cut at each ceiling cross purlin, `gap` clear of its flange (the flange stands on the sheet's pans, which the angle's
+ * flat leg also covers), so 2 cuts per bay and 2 × bays + 1 pieces per side.
+ */
+export const ceilingEdgePieces = (() => {
+  const x0 = -spec.length / 2;
+  const half = (spec.length - spec.rafter.width) / 2;
   const f = spec.crossPurlin.flange;
-  const c = spec.column.side / 2;
-  return [2 - f - c - 2 * g, 2 - f - 2 * g, 2 - c - 2 * g];
+  const g = spec.ceilingEdge.gap;
+  const bays = spec.length / spec.bay;
+  const runs: [number, number][] = [];
+  let a = -half;
+  for (let bay = 0; bay < bays; bay += 1) {
+    for (const dx of [2, 4]) {
+      const xc = x0 + bay * spec.bay + dx;
+      runs.push([a, xc - f - g]);
+      a = xc + g;
+    }
+  }
+  runs.push([a, half]);
+  return runs;
 })();
-const ceilingEdgeMetres = (spec.length / spec.bay) * 2 * ceilingEdgeCuts.reduce((a, b) => a + b, 0);
+const ceilingEdges = ceilingEdgePieces.length * 2;
+const ceilingEdgeMetres = 2 * ceilingEdgePieces.reduce((t, [xa, xb]) => t + (xb - xa), 0);
+/** Ceiling sheet figures: sheets across, how much of the inner width they cover, the gap to each wall, and the areas. */
+export const ceilingInfo = (() => {
+  const cs = spec.ceilingSheet;
+  const inner = spec.columnCentres - spec.column.side;
+  const width = cs.sheets * cs.cover;
+  const length = spec.length - spec.rafter.width;
+  const gap = (inner - width) / 2;
+  const ce = spec.ceilingEdge;
+  return {
+    sheets: cs.sheets,
+    cover: cs.cover,
+    inner,
+    width,
+    length,
+    gapEachWall: gap,
+    area: width * length,
+    stripArea: (ceilingEdgeMetres * ce.blank),
+    lap: ce.flat - gap,
+  };
+})();
 const walls = (spec.length / spec.bay) * 2;
 /** Lining runs the same length as the ceiling sheet (between the end rafters). */
 const liningRun = spec.length - spec.rafter.width;
@@ -477,10 +528,10 @@ const cutLines: { section: string; metres: number; kg: number; pieces?: string }
   { section: "ASC 12516 · long ceiling purlins", metres: ceilingLong * (spec.bay + 0.1), kg: c12516 },
   { section: "C 100×50×15×1.2 · ceiling cross purlins", metres: ceilingCross * (spec.columnCentres + spec.column.side), kg: cCross },
   {
-    section: "Cold-formed galvanised angle 100×50×1.6 · ceiling edge along both walls",
+    section: "Zincalume 0.35 mm flat strip 12 in (305 mm) blank, folded 178 + 53 mm · ceiling edge angle along both walls",
     metres: ceilingEdgeMetres,
-    kg: (spec.ceilingEdge.flat + spec.ceilingEdge.up - spec.ceilingEdge.thickness) * spec.ceilingEdge.thickness * 7850,
-    pieces: `${ceilingEdges} pieces (per bay per side ${ceilingEdgeCuts.map((c) => c.toFixed(3)).join(" + ")} m) = `,
+    kg: spec.ceilingEdge.blank * spec.ceilingEdge.thickness * 7850,
+    pieces: `${ceilingEdges} pieces (${ceilingEdgePieces.length} per wall, cut between the cross purlins, ${ceilingInfo.stripArea.toFixed(1)} m² of strip blank) = `,
   },
 ];
 export const cutOrder = cutLines.map((l) => ({
@@ -513,8 +564,8 @@ export const smallSteel = [
   },
   { section: "L50×50×5 · ceiling hangers (cross purlins to long purlins, Tan 7:25 PM)", order: `${ceilingHangers} × ${ceilingHangerLength.toFixed(3)} m · ${((ceilingHangers * ceilingHangerLength * 3.77) / 1000).toFixed(3)} t · ${ceilingHangers * 4} × M10 × 30 grade 4.6 · 11 × 30 vertical slots in the cross-purlin leg · ${ceilingHangers * spec.ceilingHanger.lockScrews} × 12-14 × 20 self-drilling lock screws · ≈ RM 1.4–2.5k (rough)` },
   {
-    section: "Self-drilling screws, Class 4 · ceiling edge angles",
-    order: `≈ ${Math.ceil((2 * ceilingEdgeMetres) / spec.ceilingEdge.screwPitch)} (into the tie and up through the sheet's edge pan, each at ${Math.round(spec.ceilingEdge.screwPitch * 1000)} mm) + sealant bead along both walls · edge angles and screws ≈ RM 2–3k (rough)`,
+    section: "Self-drilling screws, Class 4 · ceiling edge angles, and silicone line",
+    order: `≈ ${Math.ceil((2 * ceilingEdgeMetres) / spec.ceilingEdge.screwPitch)} stitch screws (through the flat leg's 53 mm lap and the sheet's edge pan, at ${Math.round(spec.ceilingEdge.screwPitch * 1000)} mm) + ≈ ${Math.ceil(ceilingEdgeMetres / spec.ceilingEdge.screwPitch)} lining screws through the lining and the down leg into the tie (at ${Math.round(spec.ceilingEdge.screwPitch * 1000)} mm) + ${ceilingEdgeMetres.toFixed(0)} m silicone / closure strip under the flat leg (and a bead on the lap) · price: get a quote`,
   },
   { section: "M20 · anchor bolts", order: `${anchorBolts} × ${anchorLength.toFixed(3)} m · ${((anchorBolts * anchorLength * rodKg(0.02)) / 1000).toFixed(3)} t` },
 ];
@@ -873,15 +924,15 @@ export function frameLayout(endFrame = false) {
   const zFoamFace = zInner - spec.lining.faceGap;
   const zPan = zFoamFace - spec.roof.foam - 0.001;
   const zCrest = zPan - spec.roof.rib;
-  // Option A (Tan, 1 Oct 2026): plain Mega Rib 35 ceiling sheet, 0.35 TCT, no foam, RIBS DOWN. Its pans are its top face,
-  // 1 mm under the truss, so `top` and `y` are the same level; the crests hang 35 mm lower, at 4.000 m clear.
+  // Plain Mega Rib 30 ceiling sheet, 0.35 TCT, no foam, RIBS DOWN. Its pans are its top face, 1 mm under the truss, so
+  // `top` and `y` are the same level; the crests hang 28.5 mm lower. The sheets start 125 mm from each wall.
   const yCeilingTop = yColumnTop - 0.001;
   const yCeiling = yCeilingTop;
-  // The ceiling runs over the lining to the lining's pan line. Its ribs hang DOWN (crests at `crest`), so the lining
-  // stops 2 mm under the ceiling rib crests (buildability check 7:54 PM: stopping it at the pan put the lining's top
-  // 33 mm up among the ceiling ribs, a clash); the ceiling's rib crests bear on the lining top via the sealant line.
-  const yCeilingCrest = yCeiling - spec.roof.rib;
-  const ceiling = { y: yCeiling, top: yCeilingTop, crest: yCeilingCrest, z0: -zPan, z1: zPan };
+  // The ceiling sheets stop 125 mm from each wall, so the lining (at most about 60 mm in from the wall) is clear of the
+  // hanging ribs and runs up to 2 mm under the ceiling edge angle's flat leg, with its down leg against the lining.
+  const yCeilingCrest = yCeiling - spec.ceilingSheet.rib;
+  const ceilingHalf = (spec.ceilingSheet.sheets * spec.ceilingSheet.cover) / 2;
+  const ceiling = { y: yCeiling, top: yCeilingTop, crest: yCeilingCrest, z0: -ceilingHalf, z1: ceilingHalf };
 
   const wing = (spec.ridgeCap.girth - 2 * spec.ridgeCap.lip) / 2;
   const capLift = pD + spec.roof.lift + spec.roof.roofFoam + spec.roof.rib + 0.002;
@@ -899,7 +950,7 @@ export function frameLayout(endFrame = false) {
     zPan: sign * zPan,
     zCrest: sign * zCrest,
     y0: yLiningBottom,
-    y1: yCeilingCrest - spec.lining.ceilingGap,
+    y1: yCeilingTop - spec.lining.ceilingGap,
   }));
 
   // Girts: web on top, toes down. The bottom row's bottom sits bottomRaise (4 in) above the wall's inside
@@ -1049,7 +1100,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
     measure: "length",
     lengthLabel: "Sheet run down the slope",
   },
-  ceiling: { name: "Ceiling sheet", section: "Plain Mega Rib 35, zincalume TCT 0.35 mm, no foam (option A, Tan 1 Oct 2026) · ribs DOWN (crests at 4.000 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access · 723 mm cover", measure: "size" },
+  ceiling: { name: "Ceiling sheet", section: "Plain Mega Rib 30, zincalume TCT 0.35 mm, no foam · 750 mm effective cover, ribs at 250 mm, 28.5 mm high, 24 mm crest · 13 sheets across the 10.0 m inner width, centred (13 × 750 = 9750 mm), leaving 125 mm to each long wall, closed by the ceiling edge angle · ribs DOWN (crests at 4.0065 m clear), pans up, 1 mm under the truss beams, screwed up to the cross purlins · seal the side laps, the joints to the lining tops and round the truss beams: the house runs under fan suction and leaks pull roof-space air in · a colour-coated underside is advised against ammonia and wash-down · not walkable, no roof-space walking access", measure: "size" },
   capping: { name: "Ridge cap", section: "24 in girth zincalume 0.47 mm · 8 ft pieces", measure: "length", lengthLabel: "Run" },
   sagRods: { name: "Purlin tie rod", section: "12 mm rod", measure: "length" },
   roofBraces: { name: "Roof X cable", section: "12 mm galvanized wire rope", measure: "length" },
@@ -1057,7 +1108,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   ceilingBolts: { name: "Ceiling purlin bolt", section: "M10 bolt", measure: "length" },
   ceilingCross: { name: "Cross purlin", section: "Lipped C 100×50×15×1.2 G450 (lighter section, saving applied) · bottom flange ON the ceiling sheet's pans (1 mm under the column top) and its ends BEAR on the SHS column ties · hung from the 3 long purlins by L50 hanger angles (2 × M10 each end, Tan 7:25 PM; was a 27 mm gap with a notional packer) · 4 spans of ≈2.53 m · 2 × self-drilling screws through the flange into each tie", measure: "length" },
   ceilingHangers: { name: "Ceiling hanger", section: "L50×50×5 angle, shop cut and punched (no welding) · one at every cross/long purlin crossing · SITE: 2 × M10 grade 4.6 into the long purlin web (round holes) + 2 × M10 into the cross purlin web through 11 × 30 VERTICAL SLOTS in the hanger leg · set each cross purlin to a string line (±10 mm, about 10 mm high at the crossings to allow for the sag the sheet adds), tighten, then 2 × 12-14 × 20 self-drilling lock screws through the leg into the cross purlin web so it cannot slide down the slots · about 1 kN per hanger with no one on the ceiling; 2 lock screws ≈2.5–3 kN (rough, engineer to confirm)", measure: "length" },
-  ceilingEdge: { name: "Ceiling edge angle", section: "Cold-formed galvanised angle 100×50×1.6 · flat leg on the SHS tie top (30 mm on the tie, upright leg there), 70 mm past the tie's inside face over the ceiling sheet's edge pan · cut to fit between the columns and the cross purlins (5 mm clear), 3 pieces per bay per side · SITE: self-drilling screws down into the tie at 300 mm, and up through the edge pan into the flat leg at 300 mm on a sealant bead, so the sheet edge is held and sealed all along both walls", measure: "length" },
+  ceilingEdge: { name: "Ceiling edge angle", section: "12 in (305 mm) strip of the same zincalume 0.35 mm sheet folded to an angle, both long walls, full length · 178 mm flat leg lying on top of the ceiling sheet (sheet under it), starting at the wall, covering the 125 mm gap and lapping 53 mm onto the sheet's edge · 53 mm leg pointing DOWN on the wall side; the wall lining sits against it and is screwed through it into the tie · cut between the cross purlins (5 mm clear of each flange) · SITE: stitch screws through the lap at 300 mm, lining screws through the down leg at 300 mm, silicone / closure strip under the flat leg · developed 231 mm of the 305 mm blank (74 mm spare, confirm with the folder) · capacity not checked", measure: "length" },
   wallGirts: { name: "Wall girt", section: "AJIYA ASC 12520 C 127×51×15×2.0 · cut 5.865 m (5 mm clear of each column), web holes punched by the supplier · web on top, open side down, dropped onto shop-welded L75×75×6 brackets and bolted on site (2 × M12 each end) · bottom row raised 300 mm off the wall top, hung from the SHS tie by the midspan M12 rod (no support on the wall)", measure: "length" },
   girtCleats: { name: "Girt bracket", section: "L75×75×6 cut 4 in (101.6 mm) (Tan, 17 Oct 2026) · L-shaped cut end SHOP-welded to the column side face (fillet all round the L, about 300 mm of weld on the 4.5 mm SHS wall: NOT checked, engineer to check) · projects straight out along the wall, horizontal leg UP 75 mm wide centred on the column face, other leg a 75 mm fin hanging down on the inner (house) side · the girt drops over it from above: 75 mm leg through the 93 mm lip opening, fin inside the flanges · 2 × 14×22 slots along the wall at 30 and 75 mm from the column face · girt starts 5 mm from the column face", measure: "size" },
   girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's horizontal leg (2 in line along the wall at 30 and 75 mm from the column face, in the 14×22 slots), washer and nut underneath · girts are never welded", measure: "length" },
@@ -1116,6 +1167,55 @@ export const liningInfo = (() => {
     wallFaceClear: spec.lining.faceGap,
   };
 })();
+/**
+ * Ceiling edge angle fit (computed): gap and lap against the sketch, and the clearances to everything near it: the
+ * girt and tie brackets (across the wall), the cross purlin flanges (along the wall and in height), the hangers, the
+ * ceiling ribs and the wall lining (its top and its screws through the down leg).
+ */
+export const ceilingEdgeFit = (() => {
+  const ce = spec.ceilingEdge;
+  const cs = spec.ceilingSheet;
+  const gap = ceilingInfo.gapEachWall;
+  const bracketMin = Math.min(spec.girtCleat.leg, spec.tieAngle.leg) / 2; // bracket leg half-width about the column centre line
+  const bracketNearZ = spec.column.side / 2 - bracketMin; // from the wall plane (column inside face) outwards, across the wall
+  const purlinFlange = spec.crossPurlin.flange;
+  const hangerLine = spec.columnCentres / 4;
+  const crestFromWall = liningInfo.crestInsideWall;
+  return {
+    gapEachWall: gap,
+    lap: ce.flat - gap,
+    flatEndFromWall: ce.flat,
+    developed: ce.flat + ce.up,
+    blank: ce.blank,
+    spareBlank: ce.blank - (ce.flat + ce.up),
+    /** Across the wall: the down leg's wall-side face is at the wall plane; the nearest bracket leg edge is this far outside it. */
+    bracketClearAcrossWall: bracketNearZ,
+    /** Along the wall: each piece stops this far from a cross purlin's flange, both sides. */
+    purlinClearAlongWall: ce.gap,
+    purlinFlange,
+    /** Height: the cross purlin's bottom flange stands 1 mm above the pans; the flat leg tops out at its thickness. */
+    purlinClearHeight: 0.001 - ce.thickness,
+    hangerBottomClearHeight: spec.ceilingHanger.bottomGap - ce.thickness,
+    nearestHangerFromWall: spec.columnCentres / 2 - spec.column.side / 2 - hangerLine,
+    /** The lining top stops this far under the flat leg; the down leg overlaps the lining by this much for the lining screws. */
+    liningTopGap: spec.lining.ceilingGap,
+    liningScrewOverlap: ce.up - spec.lining.ceilingGap,
+    liningFaceGap: spec.lining.faceGap - ce.thickness,
+    /** The lining's rib crests are this far from the wall plane; the ceiling sheet's edge is `ceilingSheetFromWall` from it, so the hanging ribs are further in. */
+    liningCrestFromWall: crestFromWall,
+    ceilingSheetFromWall: gap,
+    ribsClearLining: gap > crestFromWall + 0.02,
+    rib: cs.rib,
+    clear:
+      bracketNearZ > 0.01 &&
+      ce.gap > 0.002 &&
+      0.001 - ce.thickness > 0.0003 &&
+      gap > crestFromWall + 0.02 &&
+      Math.abs(ce.flat - gap - 0.053) < 1e-9 &&
+      Math.abs(gap - 0.125) < 1e-9,
+  };
+})();
+
 
 /** Eave and gable netting sizes for the facts panel. */
 export const nettingInfo = (() => {
