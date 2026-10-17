@@ -2,7 +2,7 @@
  * Safety review of the current model: for each item, the problem and the recommendation only (no change history).
  * Plain words for the owner. Each item has an id the 3D viewer uses to highlight the related members.
  */
-import { girtCheck } from "./girtcheck";
+import { girtCheck, girtCheckHeavy } from "./girtcheck";
 
 const pct = (v: number) => Math.round(v * 100);
 
@@ -46,6 +46,8 @@ export type SafetyItem = {
   /** What is wrong or at risk. Left out for items that are only advice. */
   problem?: string;
   recommendation: string;
+  /** Fixes the 3D model can draw as PROPOSED members (not in the parts list). Items without any are text-only. */
+  fixes?: { id: string; label: string }[];
 };
 
 export type SafetySection = { id: string; title: string; tone: "danger" | "saving" | "solar" | "ok" | "note"; items: SafetyItem[] };
@@ -61,6 +63,7 @@ export const safetySections: SafetySection[] = [
     items: [
       {
         id: "frameFixity",
+        fixes: [{ id: "groundBeams", label: "Ground beam 300 × 450 across every frame" }],
         title: "Column bases are only partly fixed",
         tag: "columns ≈100–140%",
         problem:
@@ -70,6 +73,7 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "trusses",
+        fixes: [{ id: "trussDiag", label: "3 SHS 50×50×2.3 diagonals each side of every truss" }],
         title: "Truss: no diagonals between each column and the quarter point",
         tag: "verticals ≈114–210%",
         problem:
@@ -79,6 +83,7 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "kneeJoint",
+        fixes: [{ id: "kneeGussets", label: "4 edge gussets 6×30×150 per knee" }],
         title: "Truss-to-column knee: fins too thin, bolts carry more than assumed",
         tag: "fins ≈114%",
         problem:
@@ -97,6 +102,7 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "sideBracing",
+        fixes: [{ id: "xRods", label: "M16 tension-rod X in bays 1 and 17, both sides" }],
         title: "No side-wall bracing",
         tag: "≈RM 1.5–2.5k",
         problem:
@@ -106,17 +112,17 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "midGirt",
-        title: "Middle and top wall girts marginal in inward wind",
-        tag: `≈${pct(girtCheck.rows[1].cases[1].bending)}–${pct(girtCheck.rows[1].cases[0].bending)}%`,
-        problem: `The ASC 12520 middle and top girts (3 girts, ${(girtCheck.span).toFixed(3)} m span) each carry about ${girtCheck.rows[1].tributary.toFixed(2)} m of wall. Rough code check, flange braced only at the midspan rod (${girtCheck.bracedLength.toFixed(2)} m): bending ${pct(girtCheck.rows[1].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[1].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[1].cases[1].deflection)}% / ${pct(girtCheck.rows[1].cases[0].deflection)}% of L/150. Yield alone would be ${pct(girtCheck.rows[1].cases[0].yieldOnly)}% at 0.8 kPa, so the limit is flange buckling and deflection. ${girtCheck.rows[1].cases.every((c) => c.pass) ? "Passes at both wind cases." : girtCheck.rows[1].cases[1].pass ? "Passes at the 0.57 kPa site wind but FAILS at 0.8 kPa design wind." : "FAILS at both wind cases."}`,
-        recommendation:
-          "Unless the engineer accepts 0.57 kPa, add rods at the third points of the span, or use a deeper C for these two rows (not re-computed here), or bring the girt pitch down. Engineer to size. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.",
+        title: "Middle and top wall girts: deflection in 0.8 kPa wind",
+        tag: `defl ≈${pct(girtCheck.rows[1].cases[1].deflection)}–${pct(girtCheck.rows[1].cases[0].deflection)}%`,
+        fixes: [{ id: "heavyGirt", label: "Heavier girt C 150×65×2.0 on these two rows" }],
+        problem: `The ASC 12520 middle and top girts (3 girts, ${girtCheck.span.toFixed(3)} m span, 2 rod lines at the third points) each carry about ${girtCheck.rows[1].tributary.toFixed(2)} m of wall. Rough code check, compression flange braced every ${girtCheck.bracedLength.toFixed(2)} m: bending ${pct(girtCheck.rows[1].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[1].cases[0].bending)}% at 0.8 kPa (passes); deflection ${pct(girtCheck.rows[1].cases[1].deflection)}% / ${pct(girtCheck.rows[1].cases[0].deflection)}% of the L/150 limit. ${girtCheck.rows[1].cases[0].pass ? "Passes both wind cases." : "Passes at the 0.57 kPa site wind but FAILS the deflection limit at 0.8 kPa design wind (rods stop the flange buckling, they do not stiffen the girt)."}`,
+        recommendation: `Use a deeper C for these two rows, or bring the girt pitch down. Computed for C 150×65×2.0 (15 mm lip assumed): bending ${pct(girtCheckHeavy.rows[1].cases[0].bending)}% and deflection ${pct(girtCheckHeavy.rows[1].cases[0].deflection)}% at 0.8 kPa (${girtCheckHeavy.rows[1].cases[0].pass ? "passes" : "fails"}), ${pct(girtCheckHeavy.rows[1].cases[1].deflection)}% deflection at 0.57 kPa. Engineer to size. Use grade 4.6 studs under the tie, zinc ground off before welding, painted after.`,
       },
       {
         id: "bottomGirt",
         title: "Bottom wall girt in inward wind",
         tag: `≈${pct(girtCheck.rows[0].cases[1].bending)}–${pct(girtCheck.rows[0].cases[0].bending)}%`,
-        problem: `The ASC 12520 bottom girt (4 in above the wall top) carries about ${girtCheck.rows[0].tributary.toFixed(2)} m of wall, with the wall top and the middle girt as supports. Rough code check: bending ${pct(girtCheck.rows[0].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[0].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[0].cases[1].deflection)}% / ${pct(girtCheck.rows[0].cases[0].deflection)}% of L/150. This row passes.`,
+        problem: `The ASC 12520 bottom girt (4 in above the wall top) carries about ${girtCheck.rows[0].tributary.toFixed(2)} m of wall, with the wall top and the middle girt as supports, rods at the third points. Rough code check: bending ${pct(girtCheck.rows[0].cases[1].bending)}% at 0.57 kPa and ${pct(girtCheck.rows[0].cases[0].bending)}% at 0.8 kPa; deflection ${pct(girtCheck.rows[0].cases[1].deflection)}% / ${pct(girtCheck.rows[0].cases[0].deflection)}% of L/150. This row passes.`,
         recommendation: "No change needed on this row from the rough check; engineer to confirm.",
       },
       {
@@ -223,6 +229,7 @@ export const safetySections: SafetySection[] = [
       },
       {
         id: "solarBays",
+        fixes: [{ id: "trussDiag", label: "Truss diagonals (as the truss item)" }],
         title: "Before adding solar",
         problem: "Solar adds about 0.15 kPa on every bay.",
         recommendation:
@@ -243,6 +250,7 @@ export const safetySections: SafetySection[] = [
     items: [
       {
         id: "tipPurlin",
+        fixes: [{ id: "tip2mm", label: "ASC 12520 (2.0 mm) on the tip purlin lines" }],
         title: "Eave-edge purlins",
         tag: "≈50–75%",
         recommendation:

@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SafetyPanel } from "@/components/safety-panel";
 import { SectionDiagram } from "@/components/section-diagram";
 import { ShedViewer, type ShedHandle, type ViewName } from "@/components/shed-viewer";
-import type { SafetyFocus } from "@/shed/safety";
-import { derived, liningInfo, metres, nettingInfo, partTotal, parts, spec, steelOrder, steelOrderMass, cutOrder, connectionOrder, crossPurlinSaving, smallSteel, girtRodPlan, steelTotalMass, wallQuantities, foundationQuantities, roofPurlinCut, type PartId } from "@/shed/geometry";
+import { safetySections, type SafetyFocus } from "@/shed/safety";
+import { derived, liningInfo, metres, nettingInfo, partTotal, parts, spec, steelOrder, steelOrderMass, cutOrder, connectionOrder, crossPurlinSaving, smallSteel, girtRodPlan, girtRodDx, steelTotalMass, wallQuantities, foundationQuantities, roofPurlinCut, type PartId } from "@/shed/geometry";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -61,10 +61,15 @@ function Home() {
   const [safetyOpen, setSafetyOpen] = useState(false);
   const [safetyFocus, setSafetyFocus] = useState<SafetyFocus | null>(null);
   const [showProblem, setShowProblem] = useState(true);
-  const [showFixes, setShowFixes] = useState(false);
+  // Proposed 3D fixes switched on, by fix id (safety.ts `fixes`); the global button sets or clears all of them.
+  const [fixIds, setFixIds] = useState<string[]>([]);
+  const allFixIds = Array.from(new Set(safetySections.flatMap((s) => s.items.flatMap((i) => (i.fixes ?? []).map((f) => f.id)))));
+  const showFixes = allFixIds.length > 0 && allFixIds.every((id) => fixIds.includes(id));
+  const setShowFixes = (on: boolean) => setFixIds(on ? allFixIds : []);
+  const toggleFixId = (id: string) => setFixIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   useEffect(() => {
-    shed.current?.setSafetyLayers(showProblem, showFixes);
-  }, [showProblem, showFixes]);
+    shed.current?.setSafetyLayers(showProblem, fixIds);
+  }, [showProblem, fixIds]);
   const toggleSafety = () => setSafetyOpen((open) => !open);
   useEffect(() => {
     if (!safetyOpen) setSafetyFocus(null);
@@ -93,6 +98,8 @@ function Home() {
               onProblem={setShowProblem}
               showFixes={showFixes}
               onFixes={setShowFixes}
+              fixIds={fixIds}
+              onToggleFix={toggleFixId}
               onInsets={setInsets}
             />
           )}
@@ -267,7 +274,7 @@ function Home() {
               label="Wall girts"
               value={`ASC 12520 (C 127×51×15×2.0) · ${liningInfo.girts} × ${metres(liningInfo.girtLength)} · 3 rows, lowest bottom ${Math.round((liningInfo.girtRows[0].bottom - liningInfo.wallTopIn) * 1000)} mm (4 in) above the wall top, then at ${Math.round(liningInfo.girtPitch * 1000)} mm pitch (centres ${liningInfo.girtRows.map((r) => metres((r.top + r.bottom) / 2, 3)).join(", ")}; the SHS tie is the top support) · web on top, open side down`}
             />
-            <Fact label="Girt tie rods" value={`M12 · ${derived.bays * 4} pieces · 2 per bay per side at midspan, one per girt gap: ${girtRodPlan.map((r, i) => `gap ${i + 1} ${metres(r.length, 3)}`).join(", ")} · piece 1 hangs the bottom girt from the middle girt; piece 2 starts at a coupling nut on the middle girt web, passes through the top girt up to the SHS tie, where it screws into a coupling nut on an M12 × 40 grade 4.6 bolt welded under the tie in the shop (16 mm hole, weld all round, zinc ground off, painted)`} />
+            <Fact label="Girt tie rods" value={`M12 · ${derived.bays * 2 * spec.girt.rodLines * spec.girt.rodsPerBay} pieces · ${spec.girt.rodLines} lines per bay per side at the third points of the girt span (±${Math.round(girtRodDx[1] * 1000)} mm from the bay centre), each line one piece per girt gap: ${girtRodPlan.map((r, i) => `gap ${i + 1} ${metres(r.length, 3)}`).join(", ")} · per line: piece 1 hangs the bottom girt from the middle girt; piece 2 starts at a coupling nut on the middle girt web, passes through the top girt up to the SHS tie, where it screws into a coupling nut on an M12 × 40 grade 4.6 bolt welded under the tie in the shop (16 mm hole, weld all round, zinc ground off, painted)`} />
             <Fact
               label="Lining foot"
               value={`No flashing · laps ${Math.round(liningInfo.wallLap * 1000)} mm (2 in) down over the concrete wall's inner face, ${Math.round(liningInfo.wallFaceClear * 1000)} mm clear of it · seal that joint at the wall top edge · foam runs the full panel length, so seal the exposed foam at the bottom edge (PU/silicone bead or small bottom trim) · no rib closure strips needed: the PU foam fills the ribs right to the panel ends, so there are no open rib voids`}

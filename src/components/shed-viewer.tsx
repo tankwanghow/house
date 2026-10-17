@@ -13,6 +13,7 @@ import {
   foundationQuantities,
   type PartId,
   liningInfo,
+  girtRodDx,
 } from "@/shed/geometry";
 import { snapHit, type SnapKind } from "@/shed/measure";
 import type { SafetyFocus } from "@/shed/safety";
@@ -25,7 +26,7 @@ export type ShedHandle = {
   /** Safety panel: highlight the members an item is about (null clears) and move the camera to them. */
   focusSafety: (id: SafetyFocus | null) => void;
   /** Safety layers drawn for the focused item: the problem highlight, and the PROPOSED fix members (not in the parts list). */
-  setSafetyLayers: (problem: boolean, fixes: boolean) => void;
+  setSafetyLayers: (problem: boolean, fixIds: string[]) => void;
   /** CSS px of the model covered by a panel on the left and a sheet at the bottom; the view centre shifts into the uncovered part. */
   setInsets: (left: number, bottom: number) => void;
   /**
@@ -1424,7 +1425,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       // the same length, so they share one cylinder geometry. No girt support under the bottom girt (Tan, 7:50 PM).
       // One cylinder geometry per rod piece (one per girt gap, the top one on to the tie), shared by every bay.
       const girtRodGeos = frameMid.girtRods
-        .filter((r) => r.sign > 0)
+        .filter((r) => r.sign > 0 && r.dx === girtRodDx[0])
         .map((r) => {
           const geo = new THREE.CylinderGeometry(spec.girt.rodDiameter / 2, spec.girt.rodDiameter / 2, r.y1 - r.y0, 8);
           geos.push(geo);
@@ -1449,20 +1450,20 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         const mid = x0 + (bay + 0.5) * spec.bay;
         for (const r of frameMid.girtRods) {
           const rod = new THREE.Mesh(girtRodGeos[r.piece], rodMat);
-          rod.position.set(mid, (r.y0 + r.y1) / 2, r.z);
+          rod.position.set(mid + r.dx, (r.y0 + r.y1) / 2, r.z);
           groups.girtRods.add(rod);
         }
         for (const r of frameMid.girtRods) {
           if (r.yCoupler == null) continue;
           // Coupling nut standing on the girt web, joining this rod piece to the next one up.
           const cpl = new THREE.Mesh(couplerGeo, studMat);
-          cpl.position.set(mid, r.yCoupler + st.coupler / 2, r.z);
+          cpl.position.set(mid + r.dx, r.yCoupler + st.coupler / 2, r.z);
           cpl.userData.length = st.coupler;
           groups.girtRodStuds.add(cpl);
         }
-        for (const r of frameMid.girtRods.filter((q) => q.piece === frameMid.girtRods.length / 2 - 1)) {
+        for (const r of frameMid.girtRods.filter((q) => q.piece === spec.girt.rodsPerBay - 1)) {
           const stud = new THREE.Mesh(studGeo, studMat);
-          stud.position.set(mid, r.yTieUnder, r.z);
+          stud.position.set(mid + r.dx, r.yTieUnder, r.z);
           stud.userData.length = st.head + st.thread;
           groups.girtRodStuds.add(stud);
         }
@@ -1900,7 +1901,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         return out;
       };
       /** One merged X-ray mesh for all the meshes in the given pieces. */
-      const xray = (pieces: Obj[]) => {
+      const xray = (pieces: Obj[], mat: import("three").Material = xrayMat) => {
         scene.updateMatrixWorld();
         const pieceGeos: import("three").BufferGeometry[] = [];
         for (const piece of pieces) {
@@ -1920,7 +1921,7 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         for (const g of pieceGeos) g.dispose();
         if (!merged) return;
         safetyGeos.push(merged);
-        const mesh = new THREE.Mesh(merged, xrayMat);
+        const mesh = new THREE.Mesh(merged, mat);
         mesh.renderOrder = 20;
         safetyGroup.add(mesh);
       };
@@ -2049,12 +2050,11 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
                 const z = sign * (zFaceOut + 0.05);
                 const P = (x: number, y: number) => new THREE.Vector3(x, y, z);
                 panels.push([P(xa, yBot), P(xb, yBot), P(xb, yTop), P(xa, yTop)]);
-                lines.push([P(xa, yTop), P(xb, yBot)], [P(xa, yBot), P(xb, yTop)]);
-                label("Proposed X above the wall · not designed", new THREE.Vector3(xa + spec.bay / 2, yTop + 0.55, sign * (zFaceOut + 0.3)));
+                label("Bays with no side bracing", new THREE.Vector3(xa + spec.bay / 2, yTop + 0.55, sign * (zFaceOut + 0.3)));
               }
             }
             quads(panels, ghostMat, 16);
-            dashed(lines);
+            void lines;
           },
           cam: { pos: [-33, 5, 24], target: [-48, 2.2, 5] },
         },
@@ -2185,48 +2185,131 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
           cam: { pos: [58, 26, 42], target: [0, 2, 0] },
         },
       };
-      // Proposed fixes drawn in the model (only where the fix is a member that can be drawn). Not part of the parts list.
-      const fixItems: Partial<Record<SafetyFocus, () => void>> = {
-        midGirt: () => {
-          // Extra M12 rods at the third points of the girt span, through all three girts (proposed in the safety text).
-          const tops = frameMid.girts.filter((g) => g.sign > 0).map((g) => g.yTop);
-          const y0 = tops[0] - spec.girt.section.wall - 0.02 - 0.03;
-          const y1 = tops[tops.length - 1] + 0.04;
+      // Proposed fixes drawn in the model, keyed by fix id (see `fixes` in safety.ts). All are drawn in the PROPOSED colour
+      // (cyan) and are NOT part of any part group / the parts list.
+      const proposedLabel = (text: string, at: import("three").Vector3) => label(`PROPOSED: ${text} (not in parts list)`, at, 0.5);
+      const mergeProposed = (parts: import("three").BufferGeometry[]) => {
+        if (!parts.length) return;
+        const merged = mergeGeometries(parts, false);
+        for (const g of parts) g.dispose();
+        if (!merged) return;
+        safetyGeos.push(merged);
+        const mesh = new THREE.Mesh(merged, proposedMat);
+        mesh.renderOrder = 23;
+        safetyGroup.add(mesh);
+      };
+      /** Square bar of the given size along a-b (world coordinates). */
+      const barGeo = (a: import("three").Vector3, b: import("three").Vector3, w: number, h = w) => {
+        const dir = b.clone().sub(a);
+        const len = dir.length();
+        const geo = new THREE.BoxGeometry(w, h, len);
+        geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir.normalize()));
+        geo.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+        return geo;
+      };
+      const frameXs = Array.from({ length: derived.frames }, (_, i) => x0 + i * spec.bay);
+      const fixBuilders: Record<string, () => void> = {
+        heavyGirt: () => {
+          // C 150×65×2.0 replacing the middle and top girts (same web level and inner face; 150 deep, so 23 mm further out).
+          const d = 0.15, f = 0.065, l = 0.015, t = 0.002;
+          const len = spec.bay - col - 2 * spec.girt.endGap;
           const parts: import("three").BufferGeometry[] = [];
           for (let bay = 0; bay < derived.bays; bay += 1) {
             const mid = x0 + (bay + 0.5) * spec.bay;
-            const third = (spec.bay - col - 2 * spec.girt.endGap) / 6;
+            for (const g of frameMid.girts.slice(0)) {
+              const row = frameMid.girts.filter((q) => q.sign === g.sign).indexOf(g);
+              if (row < 1) continue;
+              const sg = g.sign;
+              const box = (y: number, zOff: number, sy: number, sz: number) =>
+                parts.push(new THREE.BoxGeometry(len, sy, sz).translate(mid, y, g.zIn + sg * zOff));
+              box(g.yTop - t / 2, d / 2, t, d);
+              box(g.yTop - f / 2, t / 2, f, t);
+              box(g.yTop - f / 2, d - t / 2, f, t);
+              box(g.yTop - f + t / 2, t + l / 2, t, l);
+              box(g.yTop - f + t / 2, d - t - l / 2, t, l);
+            }
+          }
+          mergeProposed(parts);
+          proposedLabel("C 150×65×2.0 girts, middle + top rows", new THREE.Vector3(x0 + (Math.floor(derived.bays / 2) + 0.5) * spec.bay, frameMid.girts[2].yTop + 0.7, frameMid.zInner + 0.8));
+        },
+        xRods: () => {
+          const yTop = yColumnTop;
+          const yBot = yEdge + spec.wall.inside + 0.02;
+          const parts: import("three").BufferGeometry[] = [];
+          for (const xa of [x0, -x0 - spec.bay]) {
+            const xb = xa + spec.bay;
             for (const sign of [-1, 1]) {
-              const z = sign * (frameMid.zInner + spec.purlin.depth - spec.girt.rodInset);
-              for (const dx of [-third, third]) {
-                parts.push(new THREE.CylinderGeometry(0.012, 0.012, y1 - y0, 8).translate(mid + dx, (y0 + y1) / 2, z));
+              const z = sign * (zFaceOut + 0.05);
+              const P = (x: number, y: number) => new THREE.Vector3(x, y, z);
+              for (const [a, b] of [[P(xa, yTop), P(xb, yBot)], [P(xa, yBot), P(xb, yTop)]] as const) parts.push(barGeo(a, b, 0.016));
+              proposedLabel("M16 X rods + turnbuckles", new THREE.Vector3(xa + spec.bay / 2, yTop + 0.55, sign * (zFaceOut + 0.3)));
+            }
+          }
+          mergeProposed(parts);
+        },
+        groundBeams: () => {
+          const zi = frameMid.zCol - 0.3045;
+          const top = frameMid.pads[0].top;
+          mergeProposed(frameXs.map((x) => new THREE.BoxGeometry(0.3, 0.45, 2 * zi).translate(x, top - 0.225, 0)));
+          proposedLabel("ground beam 300 × 450 under every frame", new THREE.Vector3(frameXs[Math.floor(frameXs.length / 2)], top + 0.6, 0));
+        },
+        trussDiag: () => {
+          const ver = frameMid.verticals.filter((v) => v.a.z >= -1e-9).sort((p, q) => p.a.z - q.a.z);
+          // z of verticals on the +z side: 0, quarter, quarter+gap, quarter+2·gap
+          const [, vQ, v1, v2] = ver;
+          const yBot = vQ.a.y;
+          const zEnd = frameMid.zCol - 0.15;
+          const parts: import("three").BufferGeometry[] = [];
+          for (const x of frameXs) {
+            for (const sg of [-1, 1]) {
+              const N = (z: number, y: number) => new THREE.Vector3(x, y, sg * z);
+              const chain = [N(vQ.a.z, vQ.b.y), N(v1.a.z, yBot), N(v2.a.z, v2.b.y), N(zEnd, yBot)];
+              for (let i = 0; i < 3; i += 1) parts.push(barGeo(chain[i], chain[i + 1], spec.web.side + 0.004));
+            }
+          }
+          mergeProposed(parts);
+          proposedLabel("3 SHS 50×50×2.3 diagonals each side, every truss", new THREE.Vector3(frameXs[Math.floor(frameXs.length / 2)], frameMid.yRidge + 1.4, 0));
+        },
+        kneeGussets: () => {
+          const parts: import("three").BufferGeometry[] = [];
+          for (const x of frameXs) {
+            for (const k of frameMid.knee) {
+              for (const fx of k.finX) {
+                for (const z of [k.z0 + 0.015, k.z1 - 0.015]) {
+                  parts.push(new THREE.BoxGeometry(0.006, 0.15, 0.03).translate(x + fx + Math.sign(fx) * (spec.knee.fin / 2 + 0.003), k.y0 + 0.075, z));
+                }
               }
             }
           }
-          const merged = mergeGeometries(parts, false);
-          for (const g of parts) g.dispose();
-          if (merged) {
-            safetyGeos.push(merged);
-            const mesh = new THREE.Mesh(merged, proposedMat);
-            mesh.renderOrder = 23;
-            safetyGroup.add(mesh);
-          }
-          const labelBay = Math.floor(derived.bays / 2);
-          label("PROPOSED: extra M12 rods at the third points (not in parts list)", new THREE.Vector3(x0 + (labelBay + 0.5) * spec.bay, y1 + 0.55, frameMid.zInner + 0.5), 0.5);
+          mergeProposed(parts);
+          proposedLabel("knee edge gussets 6×30×150 (4 per knee)", new THREE.Vector3(frameXs[Math.floor(frameXs.length / 2)], yColumnTop + 1.1, frameMid.knee[1].z));
         },
+        tip2mm: () => {
+          xray(piecesOf("purlins", (c) => Math.abs(c.z) > zFaceOut - 0.25), proposedMat);
+          proposedLabel("ASC 12520 (2.0 mm) tip purlins", new THREE.Vector3(x0 + 6, yColumnTop + 1.4, zFaceOut + 0.5));
+        },
+      };
+      const fixesFor: Partial<Record<SafetyFocus, string[]>> = {
+        midGirt: ["heavyGirt"],
+        sideBracing: ["xRods"],
+        frameFixity: ["groundBeams"],
+        trusses: ["trussDiag"],
+        solarBays: ["trussDiag"],
+        kneeJoint: ["kneeGussets"],
+        tipPurlin: ["tip2mm"],
       };
       let safetyId: SafetyFocus | null = null;
       let layerProblem = true;
-      let layerFixes = false;
+      let layerFixes = new Set<string>();
       const drawSafety = () => {
         clearSafety();
         if (!safetyId) return;
         if (layerProblem) focusItems[safetyId].build();
-        if (layerFixes) fixItems[safetyId]?.();
+        for (const fid of fixesFor[safetyId] ?? []) if (layerFixes.has(fid)) fixBuilders[fid]();
       };
-      api.current.setSafetyLayers = (problem, fixes) => {
+      api.current.setSafetyLayers = (problem, fixIds) => {
         layerProblem = problem;
-        layerFixes = fixes;
+        layerFixes = new Set(fixIds);
         drawSafety();
       };
       api.current.focusSafety = (id) => {

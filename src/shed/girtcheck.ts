@@ -4,7 +4,7 @@
  * Wind acts horizontally across the web's plane, i.e. strong-axis bending. Supports: the concrete wall top below the
  * lowest girt and the SHS tie above the top girt carry the lining's tributary strips between the girts.
  * Assumptions (change here): fy 450 MPa (G450), E 200 GPa, wind 0.8 kPa design / 0.57 kPa MS 1553 site, deflection limit L/150
- * (cladding on girts), inward wind with the compression flange + lip braced only at the midspan rods.
+ * (cladding on girts), inward wind with the compression flange + lip braced at the third-point rod lines.
  */
 import { liningInfo, spec } from "./geometry";
 
@@ -12,8 +12,9 @@ const fy = 450e6;
 const E = 200e9;
 
 /** Centreline-model section properties (m units) of a lipped C, strong axis. */
-function cSection() {
-  const { depth: d, flange: b, lip: c, wall: t } = spec.girt.section;
+type Sec = { depth: number; flange: number; lip: number; wall: number };
+function cSection(section: Sec) {
+  const { depth: d, flange: b, lip: c, wall: t } = section;
   // elements: web (vertical in the C's own frame), 2 flanges, 2 lips; centreline dimensions
   const dc = d - t, bc = b - t, cc = c - t / 2;
   const els = [
@@ -41,12 +42,12 @@ export type GirtCheckRow = {
   cases: { kPa: number; bending: number; yieldOnly: number; deflection: number; pass: boolean }[];
 };
 
-export const girtCheck = (() => {
-  const sec = cSection();
+function runCheck(section: Sec, name: string) {
+  const sec = cSection(section);
   const L = liningInfo.girtLength;
   const rows = liningInfo.girtRows.map((r) => (r.top + r.bottom) / 2);
   const supports = [liningInfo.wallTopIn, ...rows, liningInfo.tieUnder];
-  const Lb = L / 2; // flange braced at the midspan rod
+  const Lb = L / (spec.girt.rodLines + 1); // flange braced at the rod lines (third points)
   const Fcr = (Math.PI ** 2 * E) / (Lb / sec.rStrut) ** 2;
   const Mn = sec.Z * Math.min(fy, Fcr);
   const My = sec.Z * fy;
@@ -66,7 +67,7 @@ export const girtCheck = (() => {
     };
   });
   return {
-    section: "C 127×51×15×2.0 (ASC 12520)",
+    section: name,
     span: L,
     Ix: sec.I,
     Zx: sec.Z,
@@ -78,4 +79,9 @@ export const girtCheck = (() => {
     rows: out,
     allPass: out.every((r) => r.cases.every((c) => c.pass)),
   };
-})();
+}
+
+export const girtCheck = runCheck(spec.girt.section, "C 127×51×15×2.0 (ASC 12520)");
+/** Proposed heavier girt (the earlier recommendation: C 150×65×2.0; the 15 mm lip is assumed, there is no catalogue table in the code). Same spans, rods and wind. */
+export const heavyGirtSection: Sec = { depth: 0.15, flange: 0.065, lip: 0.015, wall: 0.002 };
+export const girtCheckHeavy = runCheck(heavyGirtSection, "C 150×65×15×2.0 (assumed lip)");

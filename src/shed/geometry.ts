@@ -260,6 +260,8 @@ export const spec = {
     bottomRaise: 4 * 0.0254,
     /** Tie rods per bay per side: one per girt gap (Tan, 17 Oct 2026: 2 tie rods). */
     rodsPerBay: 2,
+    /** Tan, 17 Oct 2026: 2 rod LINES per girt span at the third points (not 1 at midspan); each line is `rodsPerBay` pieces, one per girt gap. */
+    rodLines: 2,
     rodDiameter: 0.012,
     rodInset: 0.025,
     /** Clear gap at each girt end to the column face (girts cut 5.865 m, Tan 30 Sep 2026). */
@@ -353,8 +355,12 @@ const girtPlan = (() => {
 /** One girt per bay per row per side, cut to fit between the columns (like the column ties). */
 const girts = spec.girt.rows * (spec.length / spec.bay) * 2;
 /** Girt tie rods: spec.girt.rodsPerBay pieces per bay per side (one per girt gap, the top one on to the SHS tie). */
-const girtRodStuds = (spec.length / spec.bay) * 2;
+const girtRodStuds = (spec.length / spec.bay) * 2 * spec.girt.rodLines;
 const girtRods = girtRodStuds * spec.girt.rodsPerBay;
+/** Rod lines sit at the third points of the girt span: offsets from the bay centre along the wall (m). */
+export const girtRodDx = Array.from({ length: spec.girt.rodLines }, (_, i) =>
+  ((i + 1) / (spec.girt.rodLines + 1) - 0.5) * (spec.bay - spec.column.side - 2 * spec.girt.endGap),
+);
 /** One M12 coupling nut on the top of each lower girt web that joins two rod pieces. */
 const girtRodJoins = girtRodStuds * (spec.girt.rodsPerBay - 1);
 const anchorBolts = (spec.length / spec.bay + 1) * 2 * 4;
@@ -865,9 +871,10 @@ export function frameLayout(endFrame = false) {
   // Tie rod: from a nut just under the bottom girt's web, through the middle girt's web, up to a coupling nut on
   // an M12 stud welded under the SHS column tie, rodInset in from the outer flange. No girt support under the
   // bottom girt (Tan, 28 Sep 7:50 PM): the rod hangs it from the tie.
-  const girtRods = [-1, 1].flatMap((sign) =>
+  const girtRods = [-1, 1].flatMap((sign) => girtRodDx.flatMap((dx) =>
     girtRodSpans.map((span, piece) => ({
       sign,
+      dx,
       piece,
       z: sign * (zInner + spec.purlin.depth - spec.girt.rodInset),
       y0: span.y0,
@@ -878,7 +885,7 @@ export function frameLayout(endFrame = false) {
       /** Coupling nut on the girt web at the top of this piece (none on the last piece, which ends at the tie stud). */
       yCoupler: piece < girtRodSpans.length - 1 ? girtTops[piece + 1] : null,
     })),
-  );
+  ));
 
   // Eave netting: in the plane of the columns' outside face, where the column tie (outside flush) and the
   // column-line roof purlin (its web's bottom corner is at zFace) both sit. It closes the gap from the
@@ -1008,7 +1015,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's flat leg (45 mm from the column, 40 mm apart), washer and nut underneath · girts are never welded", measure: "length" },
   girtRods: {
     name: "Girt tie rod",
-    section: "M12 threaded rod · bay midspan, from the bottom girt through the middle girt up to the SHS 125 column tie, screwed into a coupling nut on an M12 stud welded under the tie · 25 mm in from the girts' outer flange · nuts both sides of each girt web",
+    section: "M12 threaded rod · 2 lines per bay at the third points of the girt span, each line from the bottom girt through the middle girt up to the SHS 125 column tie, screwed into a coupling nut on an M12 stud welded under the tie · 25 mm in from the girts' outer flange · nuts both sides of each girt web",
     measure: "length",
   },
   girtRodStuds: {

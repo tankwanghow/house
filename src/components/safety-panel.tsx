@@ -11,6 +11,9 @@ type Props = {
   onProblem: (on: boolean) => void;
   showFixes: boolean;
   onFixes: (on: boolean) => void;
+  /** Proposed 3D fixes currently drawn, and a toggle for one fix id. */
+  fixIds: string[];
+  onToggleFix: (id: string) => void;
   /** CSS px of the model the panel covers: on the left (wide screens) or at the bottom (phone sheet). */
   onInsets: (left: number, bottom: number) => void;
 };
@@ -27,7 +30,7 @@ const tone: Record<SafetySection["tone"], { head: string; dot: string; on: strin
  * Review notes over the model. Phones: a short bottom sheet (at most ~45% of the model, scrollable, can be
  * folded down to its title bar). Wide screens: a card in the model's top-left corner.
  */
-export function SafetyPanel({ active, onSelect, onClose, showProblem, onProblem, showFixes, onFixes, onInsets }: Props) {
+export function SafetyPanel({ active, onSelect, onClose, showProblem, onProblem, showFixes, onFixes, fixIds, onToggleFix, onInsets }: Props) {
   /** Per-problem override: fix text of single items opened with their own button while the global fixes toggle is off. */
   const [fixOpen, setFixOpen] = useState<Set<string>>(new Set());
   const toggleFix = (id: string) =>
@@ -112,7 +115,7 @@ export function SafetyPanel({ active, onSelect, onClose, showProblem, onProblem,
             onClick={() => onFixes(!showFixes)}
             className={`rounded border px-2 py-1 text-[11px] font-medium ${showFixes ? "border-cyan-500/80 bg-cyan-950/60 text-cyan-200" : "border-border bg-surface-2/40 text-muted"}`}
           >
-            {showFixes ? "Hide fixes" : "Show fixes"}
+            {showFixes ? "Hide all fixes" : "Show all fixes (3D + text)"}
           </button>
         </div>
         {safetySections.map((section) => (
@@ -152,6 +155,24 @@ export function SafetyPanel({ active, onSelect, onClose, showProblem, onProblem,
                     </button>
                     {on && (
                       <div className="mt-1 pl-3 text-[11px] text-fg/90">
+                        {(item.fixes ?? []).map((f) => (
+                          <button
+                            key={f.id}
+                            type="button"
+                            data-testid={`toggle-3d-${f.id}`}
+                            aria-pressed={fixIds.includes(f.id)}
+                            onClick={() => onToggleFix(f.id)}
+                            className={`mr-1 mb-1 rounded border px-2 py-0.5 text-[11px] font-medium ${fixIds.includes(f.id) ? "border-cyan-400 bg-cyan-900/70 text-cyan-100" : "border-cyan-700/70 text-cyan-200"}`}
+                          >
+                            {fixIds.includes(f.id) ? "Hide in 3D: " : "Show in 3D: "}
+                            {f.label}
+                          </button>
+                        ))}
+                        {!(item.fixes ?? []).length && (
+                          <span data-testid="text-only" className="mr-1 inline-block rounded border border-border px-2 py-0.5 text-[11px] text-muted">
+                            Fix is text-only (not drawable)
+                          </span>
+                        )}
                         <button
                           type="button"
                           data-testid={`toggle-fix-${item.id}`}
@@ -160,7 +181,7 @@ export function SafetyPanel({ active, onSelect, onClose, showProblem, onProblem,
                           onClick={() => toggleFix(item.id)}
                           className="rounded border border-cyan-700/70 px-2 py-0.5 text-[11px] font-medium text-cyan-200 disabled:opacity-50"
                         >
-                          {showFixes || fixOpen.has(item.id) ? "Hide fix" : "Show fix"}
+                          {showFixes || fixOpen.has(item.id) ? "Hide fix text" : "Show fix text"}
                         </button>
                         {(showFixes || fixOpen.has(item.id)) && (
                           <span data-testid="fix-text" className="mt-1 block">
