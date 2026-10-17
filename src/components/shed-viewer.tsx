@@ -1086,9 +1086,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
       // 13 plain Mega Rib 30 sheets across, centred, 125 mm short of each wall (see frameLayout); ribs DOWN.
       const ceilingWidth = frameMid.ceiling.z1 - frameMid.ceiling.z0;
       const ceilingLength = spec.length - chordW;
-      // Its pans are at frameMid.ceiling.y, 1 mm under the truss; rib centres at every 250 mm from the left cover edge, on both outer edges too (13 × 3 + 1 = 40 rib lines, the two end ribs cut in half at the cover edge), so the phase is half the rib base.
+      // Its pans are at frameMid.ceiling.y, 1 mm under the truss; a FULL rib at every 250 mm from one cover edge to the other, outer edges too (13 × 3 + 1 = 40 identical ribs); the two outer ribs are centred on the cover edge, so the drawn sheet is a half rib base wider each side.
       const ceiling = new THREE.Group();
-      ceiling.add(ribMesh(ceilingWidth, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, spec.ceilingSheet.ribBase / 2, spec.ceilingSheet, spec.ceilingSheet.rib * scale));
+      ceiling.add(ribMesh(ceilingWidth + spec.ceilingSheet.ribBase, ceilingLength, frameMid.ceiling.y, true, ceilingMat, 0, 0, spec.ceilingSheet, spec.ceilingSheet.rib * scale));
       ceiling.rotation.y = Math.PI / 2;
       ceiling.position.set(-ceilingLength / 2, 0, 0);
       groups.ceiling.add(ceiling);
@@ -1323,9 +1323,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         }
       }
 
-      // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 178 mm flat leg starts at the wall
-      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 125 mm gap and lapping 53 mm
-      // onto the sheet; the 53 mm leg points down on the wall side, in the lining's face gap, with the lining against it.
+      // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 177.8 mm (7 in) flat leg starts at the wall
+      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 125 mm gap and lapping 52.8 mm
+      // onto the sheet; the 127 mm (5 in) leg points down on the wall side, in the lining's face gap, with the lining against it.
       // Cut between the cross purlins (whose flanges stand on the pans), so the legs never meet a purlin.
       {
         const ce = spec.ceilingEdge;
