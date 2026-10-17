@@ -251,7 +251,7 @@ export const spec = {
    * threaded rod pieces per bay at midspan (one per girt gap): piece 1 from under the bottom girt's web to a coupling nut on the middle
    * girt's web, piece 2 from that nut through the top girt's web up to the SHS 125 column tie. Tan's top detail: a 16 mm hole in the tie's bottom wall, an M12 × 40 grade 4.6 bolt welded
    * there with its head against the underside and threads pointing down, and an M12 coupling nut joining the rod to
-   * it. `rodInset` in from the girts' outer flange (23 mm in from the tie's outside face). Nuts both sides of each
+   * it. The rod line is centred on the tie's width (the stud is on the tie's centre line) and passes through the girt web on its centre line (Tan, 17 Oct 2026; was 25 mm in from the outer flange, 39.5 mm off the tie centre). Nuts both sides of each
    * girt web. `stud`: head height, thread below the head, coupling nut length and across-flats.
    */
   girt: {
@@ -265,7 +265,6 @@ export const spec = {
     /** Tan, 17 Oct 2026: 2 rod LINES per girt span at the third points (not 1 at midspan); each line is `rodsPerBay` pieces, one per girt gap. */
     rodLines: 2,
     rodDiameter: 0.012,
-    rodInset: 0.025,
     /** Clear gap at each girt end to the column face (girts cut 5.865 m, Tan 30 Sep 2026). */
     endGap: 0.005,
     stud: { head: 0.008, thread: 0.032, coupler: 0.036, headAF: 0.018, couplerAF: 0.018 },
@@ -550,6 +549,31 @@ export const bracketFit = (() => {
     boltFromGirtEnd,
     boltsInGirt: boltFromGirtEnd.every((b) => b > 0 && b < spec.bay - spec.column.side - 2 * spec.girt.endGap),
     boltsOnLeg: gc.boltAts.every((b) => b + gc.slot.l / 2 < gc.length),
+  };
+})();
+/**
+ * Girt tie rod position check (computed): transverse (across the wall) offsets of the rod line from the tie's centre
+ * line and the girt web's centre line, and the along-the-wall distance from each rod line to the nearest girt/tie
+ * bracket bolt and to the bracket end (a rod must not cross a bracket or a bolt slot).
+ */
+export const rodFit = (() => {
+  const col = spec.column.side;
+  const zCol = spec.columnCentres / 2;
+  const tieCentre = zCol + col / 2 - spec.columnTie.width / 2;
+  const girtCentre = zCol - col / 2 + spec.purlin.depth / 2;
+  const rodZ = zCol; // as drawn: frameLayout girtRods z = sign * zCol
+  const girtLen = spec.bay - col - 2 * spec.girt.endGap;
+  // distance from the bay centre to the girt end, then rod positions from the column face
+  const fromFace = girtRodDx.map((dx) => spec.girt.endGap + girtLen / 2 + dx);
+  const nearestBolt = Math.min(...fromFace.map((x) => Math.min(...spec.girtCleat.boltAts.map((b) => Math.abs(x - b)))), ...fromFace.map((x) => Math.min(...spec.tieAngle.boltAts.map((b) => Math.abs(x - b)))));
+  const nearestBracketEnd = Math.min(...fromFace.map((x) => Math.abs(x - Math.max(spec.girtCleat.length, spec.tieAngle.length))));
+  return {
+    offsetFromTieCentre: rodZ - tieCentre,
+    offsetFromGirtCentre: rodZ - girtCentre,
+    rodFromColumnFace: fromFace,
+    nearestBoltDistance: nearestBolt,
+    nearestBracketEndDistance: nearestBracketEnd,
+    clearOfBrackets: nearestBracketEnd > 0.1,
   };
 })();
 export const connectionQuantities = (() => {
@@ -894,14 +918,14 @@ export function frameLayout(endFrame = false) {
     })),
   );
   // Tie rod: from a nut just under the bottom girt's web, through the middle girt's web, up to a coupling nut on
-  // an M12 stud welded under the SHS column tie, rodInset in from the outer flange. No girt support under the
+  // an M12 stud welded under the SHS column tie, on the tie's centre line, which is also the girt web's centre line (within 1 mm). No girt support under the
   // bottom girt (Tan, 28 Sep 7:50 PM): the rod hangs it from the tie.
   const girtRods = [-1, 1].flatMap((sign) => girtRodDx.flatMap((dx) =>
     girtRodSpans.map((span, piece) => ({
       sign,
       dx,
       piece,
-      z: sign * (zInner + spec.purlin.depth - spec.girt.rodInset),
+      z: sign * zCol,
       y0: span.y0,
       /** Rod top: for the last piece the end of the welded M12 stud, inside the coupling nut. */
       y1: span.y1,
@@ -1039,7 +1063,7 @@ export const partInfo: Record<PartId, { name: string; section: string; measure: 
   girtBolts: { name: "Girt bolt", section: "M12 × 30 grade 4.6 HDG, put in ON SITE · down through the girt web and the bracket's horizontal leg (2 in line along the wall at 30 and 75 mm from the column face, in the 14×22 slots), washer and nut underneath · girts are never welded", measure: "length" },
   girtRods: {
     name: "Girt tie rod",
-    section: "M12 threaded rod · 2 lines per bay at the third points of the girt span, each line from the bottom girt through the middle girt up to the SHS 125 column tie, screwed into a coupling nut on an M12 stud welded under the tie · 25 mm in from the girts' outer flange · nuts both sides of each girt web",
+    section: "M12 threaded rod · 2 lines per bay at the third points of the girt span, each line from the bottom girt through the middle girt up to the SHS 125 column tie, screwed into a coupling nut on an M12 stud welded under the tie · on the tie's centre line, through the centre of the girt web · nuts both sides of each girt web",
     measure: "length",
   },
   girtRodStuds: {
