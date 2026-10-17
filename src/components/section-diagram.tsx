@@ -312,7 +312,7 @@ export function SectionDiagram() {
             strokeDasharray="1.2 0.8"
           />
         ))}
-        {/* Ceiling edge angle (behind the section cut, between the columns): flat leg from the wall plane over the gap and the sheet's edge, 127 mm leg down on the wall side */}
+        {/* Ceiling edge angle (behind the section cut, between the columns): flat leg from the wall plane over the gap and the sheet's edge, 88.9 mm leg down on the wall side */}
         {frame.columns.map((c) => {
           const ce = spec.ceilingEdge;
           const dir = -Math.sign(c.z);

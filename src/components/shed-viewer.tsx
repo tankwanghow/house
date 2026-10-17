@@ -1085,8 +1085,8 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         groups.roof.add(group);
       }
 
-      // TH Superior Rib 35 metal decking (Thung Hing): 13 plain sheets across, centred, 60 mm short of each wall (see
-      // frameLayout); ribs DOWN. 27 identical full major ribs at 380 mm (13 × 2 + 1) with 3 shallow minor ribs in every pan.
+      // TH Superior Rib 35 metal decking (Thung Hing): 13 plain sheets across, centred, 125 mm short of each wall (see
+      // frameLayout); ribs DOWN. 27 identical full major ribs at 375 mm (13 × 2 + 1) with 3 shallow minor ribs in every pan.
       // The mesh runs from the first rib's outer foot (the lap-edge side, towards -z) to the last rib's outer foot.
       const ceilingLength = spec.length - chordW;
       const cp = ceilingProfile;
@@ -1331,9 +1331,9 @@ export const ShedViewer = forwardRef<ShedHandle, Props>(function ShedViewer({ sh
         }
       }
 
-      // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 177.8 mm (7 in) flat leg starts at the wall
-      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 60 mm gap and lapping 117.8 mm
-      // onto the sheet; the 127 mm (5 in) leg points down on the wall side, in the lining's face gap, with the lining against it.
+      // Ceiling edge angles (sketch ce4): a 0.35 mm folded strip on each long wall. The 215.9 mm (8.5 in) flat leg starts at the wall
+      // plane (the columns' inside face) and lies ON the ceiling sheet's pans, covering the 125 mm gap and lapping 90.9 mm
+      // onto the sheet; the 88.9 mm (3.5 in) leg points down on the wall side, in the lining's face gap, with the lining against it.
       // Cut between the cross purlins (whose flanges stand on the pans), so the legs never meet a purlin.
       {
         const ce = spec.ceilingEdge;
