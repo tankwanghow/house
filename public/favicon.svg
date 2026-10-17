@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Layer House">
+  <rect width="32" height="32" rx="6" fill="#141816"/>
+  <polygon points="1,15 16,9 31,15 31,18.5 16,12.5 1,18.5" fill="#6E7C72"/>
+  <polyline points="1,15 16,9 31,15" fill="none" stroke="#D4A656" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+  <rect x="6.5" y="17" width="3" height="11" fill="#B7C0C8"/>
+  <rect x="22.5" y="17" width="3" height="11" fill="#B7C0C8"/>
+</svg>
